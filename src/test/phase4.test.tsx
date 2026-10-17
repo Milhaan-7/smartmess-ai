@@ -61,14 +61,14 @@ describe('Menus calendar', () => {
     await user.click(screen.getByRole('button', { name: /Add Menu/ }));
     const dialog = screen.getByRole('dialog');
     await user.clear(within(dialog).getByLabelText('Date'));
-    await user.type(within(dialog).getByLabelText('Date'), '2026-12-01');
+    await user.type(within(dialog).getByLabelText('Date'), '2028-12-01');
     await user.selectOptions(within(dialog).getByLabelText('Meal'), 'dinner');
     await user.type(within(dialog).getByLabelText('Food item 1 name'), 'Test Pulao');
     await user.type(within(dialog).getByLabelText('Food item 1 kilograms per portion'), '0.3');
     await user.click(within(dialog).getByRole('button', { name: 'Add menu' }));
-    expect(await screen.findByRole('heading', { level: 3, name: 'December 2026' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 3, name: 'December 2028' })).toBeInTheDocument();
     const selected = document.querySelector('button[aria-pressed="true"]') as HTMLElement;
-    expect(selected.getAttribute('aria-label')).toMatch(/^2026-12-01,/);
+    expect(selected.getAttribute('aria-label')).toMatch(/^2028-12-01,/);
   });
 
   it('still lets the user browse months without changing the selection', async () => {

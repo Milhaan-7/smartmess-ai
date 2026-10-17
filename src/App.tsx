@@ -20,11 +20,21 @@ const PAGES: Record<PageId, ComponentType> = {
   settings: Settings,
 };
 
+import { useAppStore } from './store/AppStore';
+import { getNavItemsForRole } from './components/layout/Sidebar';
+
 function Routes() {
   const route = useRoute();
-  const Page = PAGES[route.page];
+  const { currentUser } = useAppStore();
+  const role = currentUser?.role || 'manager';
+  const allowedPages = getNavItemsForRole(role).map((item) => item.id);
+  
+  const isAllowed = allowedPages.includes(route.page);
+  const activePage = isAllowed ? route.page : 'dashboard';
+  const Page = PAGES[activePage];
+
   return (
-    <AppShell page={route.page}>
+    <AppShell page={activePage}>
       {/* Keyed by the full hash so a page re-reads its URL parameters when they change. */}
       <Page key={route.raw} />
     </AppShell>

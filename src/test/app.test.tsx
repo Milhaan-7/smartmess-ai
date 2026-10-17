@@ -114,7 +114,7 @@ describe('menus', () => {
     expect(within(dialog).getByText(/menu already exists/)).toBeInTheDocument();
 
     await user.clear(within(dialog).getByLabelText('Date'));
-    await user.type(within(dialog).getByLabelText('Date'), '2026-12-01');
+    await user.type(within(dialog).getByLabelText('Date'), '2026-10-28');
     await user.click(within(dialog).getByRole('button', { name: 'Add menu' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(await screen.findByText('Test Pulao')).toBeInTheDocument();
@@ -250,7 +250,7 @@ describe('settings', () => {
     await user.clear(buffer);
     await user.type(buffer, '12');
     await user.click(screen.getByRole('button', { name: /Save preferences/ }));
-    expect(await screen.findByText(/Preferences saved for this session/)).toBeInTheDocument();
+    expect(await screen.findByText(/Preferences saved/)).toBeInTheDocument();
   });
 });
 

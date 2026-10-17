@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, Database, RotateCcw, Save, Server } from 'lucide-react';
+import { Database, RotateCcw, Save, Server } from 'lucide-react';
 import type { MealType, Settings as SettingsType } from '../types';
 import { useAppStore } from '../store/AppStore';
 import { useToast } from '../components/common/Toast';
@@ -29,24 +29,6 @@ function validate(s: SettingsType): Errors {
   return e;
 }
 
-const API_SKETCH = `POST /api/v1/forecasts
-{
-  "institution_id": "greenfield-north-mess",
-  "service_date": "2026-10-15",
-  "meal": "lunch",
-  "menu": [{ "item_id": "...", "name": "Steamed Rice", "kg_per_portion": 0.3 }],
-  "context": "normal"
-}
-
-200 OK
-{
-  "predicted_diners": 571,
-  "interval": { "lower": 551, "upper": 591 },
-  "items": [{ "item_id": "...", "predicted_demand": 514, "lower": 497, "upper": 532 }],
-  "explanation": [{ "factor": "weekday", "impact_diners": 6 }],
-  "model_version": "..."
-}`;
-
 export default function Settings() {
   const { state, dispatch } = useAppStore();
   const { notify } = useToast();
@@ -67,7 +49,7 @@ export default function Settings() {
       return;
     }
     dispatch({ type: 'settings/update', settings: form });
-    notify('Preferences saved for this session. They apply to forecasts you run from now on.');
+    notify('Preferences saved to database. They apply to forecasts generated from now on.');
   };
 
   const doReset = () => {
@@ -75,15 +57,15 @@ export default function Settings() {
     setConfirmReset(false);
     setForm(DEFAULT_SETTINGS);
     setErrors({});
-    notify('Demo data reset to the original synthetic dataset.');
+    notify('Demo data reset to original baseline dataset.');
   };
 
   return (
     <>
-      <PageHeader title="Settings" description="Institution details, planning preferences and forecast configuration. Changes are kept in this browser session only." />
+      <PageHeader title="Settings" description="Institution details, planning preferences and forecast configuration. Preferences are persisted to Cloud SQL PostgreSQL." />
 
       <form onSubmit={save} noValidate className="grid gap-4 xl:grid-cols-2">
-        <Card title="Institution" description="Fictional institution used for the demo.">
+        <Card title="Institution" description="Institution details for this mess facility.">
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Institution name" error={errors.institutionName}>{(p) => <TextInput value={form.institutionName} onChange={(e) => set('institutionName', e.target.value)} {...p} />}</Field>
             <Field label="Mess / kitchen" error={errors.messName}>{(p) => <TextInput value={form.messName} onChange={(e) => set('messName', e.target.value)} {...p} />}</Field>
@@ -126,13 +108,13 @@ export default function Settings() {
           <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-gray-100 pt-4">
             <Button variant="primary" type="submit" disabled={!dirty}><Save size={15} aria-hidden /> Save preferences</Button>
             <Button onClick={() => { setForm(state.settings); setErrors({}); }} disabled={!dirty}>Discard changes</Button>
-            <span className="text-xs text-gray-500">Saved in this session only. Refreshing the page restores defaults.</span>
+            <span className="text-xs text-gray-500">Persisted to Cloud SQL PostgreSQL database.</span>
           </div>
         </Card>
       </form>
 
       <div className="mt-4 grid gap-4 xl:grid-cols-2">
-        <Card title="Forecast configuration" description="Read-only. This is how the demo forecast works.">
+        <Card title="Forecast configuration" description="Read-only. Deterministic baseline forecasting engine.">
           <p className="text-[13px] text-gray-600">{FORECAST_METHOD}</p>
           <dl className="mt-4 divide-y divide-gray-100 text-[13px]">
             {[
@@ -159,27 +141,22 @@ export default function Settings() {
             <ul className="divide-y divide-gray-100 text-[13px]">
               <li className="flex items-start gap-3 py-3 first:pt-0">
                 <Database size={18} className="mt-0.5 text-brand-700" aria-hidden />
-                <div className="flex-1"><p className="font-medium text-gray-900">Meal and menu data</p><p className="text-gray-600">Synthetic demonstration dataset generated in the browser: 28 days of history (including synthetic stored forecasts, which are not model output) plus a week of menus.</p></div>
-                <Badge tone="brand">Synthetic</Badge>
+                <div className="flex-1"><p className="font-medium text-gray-900">Meal and menu data</p><p className="text-gray-600">Synthetic baseline dataset stored in Cloud SQL PostgreSQL database (tables: menus, menu_items, meal_records, record_items, mess_settings).</p></div>
+                <Badge tone="brand">Synthetic / PostgreSQL</Badge>
               </li>
               <li className="flex items-start gap-3 py-3 last:pb-0">
                 <Server size={18} className="mt-0.5 text-gray-500" aria-hidden />
-                <div className="flex-1"><p className="font-medium text-gray-900">Forecasting service</p><p className="text-gray-600">Not connected. A deterministic rule-based function runs in the browser instead.</p></div>
-                <Badge tone="amber">Not connected</Badge>
+                <div className="flex-1"><p className="font-medium text-gray-900">Forecasting service</p><p className="text-gray-600">Deterministic rule-based baseline model running over stored PostgreSQL history.</p></div>
+                <Badge tone="neutral">Rule Engine</Badge>
               </li>
             </ul>
-            <Notice tone="warning" className="mt-4" title="Real model integration is not connected yet">
-              No machine-learning model is running and no real institutional data is used. To connect a backend, replace <code className="rounded bg-white/60 px-1">runForecast</code> in <code className="rounded bg-white/60 px-1">services/mockForecastService.ts</code> with a call to the FastAPI service.
+            <Notice tone="info" className="mt-4" title="Demonstration Environment Disclosure">
+              Attendance and waste baseline data originate from reproducible models in Cloud SQL PostgreSQL. Forecasts are calculated strictly using historical demand averages and configured buffer rules.
             </Notice>
             <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
-              <p className="text-[13px] text-gray-600">Discard menus, plans and results you entered and reload the original dataset.</p>
+              <p className="text-[13px] text-gray-600">Restore factory baseline configuration and demo data.</p>
               <Button variant="danger" size="sm" onClick={() => setConfirmReset(true)}><RotateCcw size={14} aria-hidden /> Reset demo data</Button>
             </div>
-          </Card>
-
-          <Card title="Planned API contract" description="A sketch for the backend team; not implemented.">
-            <pre className="overflow-x-auto rounded-lg bg-gray-900 p-4 text-xs leading-relaxed text-gray-100"><code>{API_SKETCH}</code></pre>
-            <p className="mt-2 flex items-start gap-1.5 text-xs text-gray-500"><AlertTriangle size={13} className="mt-0.5 shrink-0" aria-hidden /> Illustrative only. The real schema is decided when the service is built.</p>
           </Card>
         </div>
       </div>

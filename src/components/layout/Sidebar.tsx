@@ -1,7 +1,8 @@
-import { BarChart3, ChefHat, CalendarDays, FlaskConical, LayoutDashboard, Leaf, Settings as SettingsIcon, TrendingUp, X, type LucideIcon } from 'lucide-react';
+import { BarChart3, ChefHat, CalendarDays, Database, LayoutDashboard, Leaf, Settings as SettingsIcon, TrendingUp, X, type LucideIcon } from 'lucide-react';
 import type { PageId } from '../../types';
 import { hrefFor } from '../../lib/router';
 import { cx } from '../../lib/cx';
+import { useAppStore, type UserRole } from '../../store/AppStore';
 
 export const NAV_ITEMS: { id: PageId; label: string; icon: LucideIcon }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -12,7 +13,28 @@ export const NAV_ITEMS: { id: PageId; label: string; icon: LucideIcon }[] = [
   { id: 'settings', label: 'Settings', icon: SettingsIcon },
 ];
 
+export function getNavItemsForRole(role?: UserRole): { id: PageId; label: string; icon: LucideIcon }[] {
+  if (role === 'student') {
+    return [
+      { id: 'dashboard', label: "Today's Menu", icon: LayoutDashboard },
+      { id: 'menus', label: 'Weekly Menus', icon: CalendarDays },
+    ];
+  }
+  if (role === 'kitchen_staff') {
+    return [
+      { id: 'dashboard', label: 'Kitchen Board', icon: LayoutDashboard },
+      { id: 'menus', label: 'Menus', icon: CalendarDays },
+      { id: 'operations', label: 'Kitchen Operations', icon: ChefHat },
+    ];
+  }
+  // Manager has full access
+  return NAV_ITEMS;
+}
+
 export function Sidebar({ active, open, onClose }: { active: PageId; open: boolean; onClose: () => void }) {
+  const { currentUser } = useAppStore();
+  const navItems = getNavItemsForRole(currentUser?.role);
+
   return (
     <>
       {open && <div className="fixed inset-0 z-30 bg-gray-900/40 lg:hidden" onClick={onClose} aria-hidden />}
@@ -38,7 +60,7 @@ export function Sidebar({ active, open, onClose }: { active: PageId; open: boole
         </div>
 
         <nav aria-label="Primary" className="flex-1 space-y-0.5 overflow-y-auto px-3 py-4">
-          {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+          {navItems.map(({ id, label, icon: Icon }) => {
             const isActive = id === active;
             return (
               <a
@@ -59,18 +81,15 @@ export function Sidebar({ active, open, onClose }: { active: PageId; open: boole
         </nav>
 
         <div className="border-t border-gray-100 p-3">
-          <a
-            href={hrefFor('settings')}
-            onClick={onClose}
-            className="flex items-start gap-2.5 rounded-lg bg-brand-50 px-3 py-2.5 text-xs text-brand-900 hover:bg-brand-100"
-            title="See data-source status in Settings"
-          >
-            <FlaskConical size={15} className="mt-0.5 shrink-0" aria-hidden />
-            <span>
-              <span className="block font-semibold">Synthetic demo data</span>
-              <span className="text-brand-800/80">No real model connected</span>
-            </span>
-          </a>
+          <div className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5 text-xs text-gray-600">
+            <div className="flex items-center gap-1.5 font-medium text-gray-900">
+              <Database size={13} className="text-brand-700 shrink-0" aria-hidden />
+              <span>Cloud SQL PostgreSQL</span>
+            </div>
+            <p className="mt-1 text-[11px] text-gray-500 leading-tight">
+              Persistent storage · Reproducible baseline forecasts
+            </p>
+          </div>
         </div>
       </aside>
     </>

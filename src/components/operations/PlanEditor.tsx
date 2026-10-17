@@ -7,6 +7,7 @@ import { DEMO_TODAY } from '../../lib/constants';
 import { cx } from '../../lib/cx';
 import { approvedKg, suggestedKg } from '../../services/metrics';
 import { approvePlan, canRecordResults, parseQuantity, reopenPlan, saveActuals } from '../../services/operationsService';
+import { useAppStore } from '../../store/AppStore';
 import { Card } from '../common/Card';
 import { Button } from '../common/Button';
 import { Badge, StatusBadge } from '../common/Badge';
@@ -47,9 +48,16 @@ function QtyInput({ value, onChange, label, error, disabled }: { value: string; 
 
 export function PlanEditor({ record, onSave }: PlanEditorProps) {
   const { notify } = useToast();
+  const { currentUser } = useAppStore();
+
+  const isManager = currentUser?.role === 'manager';
+  const isStaff = currentUser?.role === 'kitchen_staff';
+
   const isRecommended = record.status === 'recommended';
   // Results can only be entered once the service date has arrived (relative to the demo planning date).
   const resultsAllowed = canRecordResults(record, DEMO_TODAY);
+  const showResults = !isRecommended && resultsAllowed;
+  const canEditResults = showResults && (isManager || (isStaff && record.status !== 'completed'));
 
   const [final, setFinal] = useState<Draft>(() => toDraft(record.items, (i) => i.approvedPrep ?? i.suggestedPrep));
   const [reviewed, setReviewed] = useState<Record<string, boolean>>(() => Object.fromEntries(record.items.map((i) => [i.itemId, !isRecommended])));
@@ -89,6 +97,7 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
   }).length;
 
   const confirmPlan = () => {
+    if (!isManager) return;
     if (Object.keys(planErrors).length > 0) {
       notify('Fix the highlighted quantities before confirming.', 'error');
       return;
@@ -99,6 +108,7 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
   };
 
   const revise = () => {
+    if (!isManager) return;
     onSave(reopenPlan(record));
     notify('Plan reopened for review. Previously entered results were cleared.');
   };
@@ -120,6 +130,7 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
   const dinersError = dinersParsed.ok ? (dinersParsed.value > 5000 ? 'Too large' : undefined) : dinersParsed.error;
 
   const saveResults = () => {
+    if (!canEditResults) return;
     setShowResultErrors(true);
     if (dinersError || Object.keys(resultErrors).length > 0) {
       notify('Fix the highlighted values before saving results.', 'error');
@@ -137,6 +148,7 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
   };
 
   const fillPrepared = () => {
+    if (!canEditResults) return;
     setPrepared(Object.fromEntries(record.items.map((i) => [i.itemId, String(i.approvedPrep ?? '')])));
   };
 
@@ -173,7 +185,6 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
   const planComplete = finalTot.entered === n;
   const resultsComplete = prepTot.entered === n && consTot.entered === n;
   const invalidCount = n - finalTot.entered;
-  const showResults = !isRecommended && resultsAllowed;
 
   const head = (label: string, unit: string) => (
     <span className="inline-block leading-tight">
@@ -212,25 +223,29 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
       align: 'right',
       cell: (i) =>
         isRecommended ? (
-          <div className="flex items-start justify-end gap-2">
-            <QtyInput
-              value={final[i.itemId] ?? ''}
-              onChange={(v) => edit(i.itemId, v)}
-              label={`${i.name} final approved quantity`}
-              error={planErrors[i.itemId]}
-            />
-            <div className="flex h-9 items-center">
-              {reviewed[i.itemId] ? (
-                parseQuantity(final[i.itemId] ?? '').ok && Number(final[i.itemId]) !== i.suggestedPrep ? (
-                  <Badge tone="amber">Modified</Badge>
+          isManager ? (
+            <div className="flex items-start justify-end gap-2">
+              <QtyInput
+                value={final[i.itemId] ?? ''}
+                onChange={(v) => edit(i.itemId, v)}
+                label={`${i.name} final approved quantity`}
+                error={planErrors[i.itemId]}
+              />
+              <div className="flex h-9 items-center">
+                {reviewed[i.itemId] ? (
+                  parseQuantity(final[i.itemId] ?? '').ok && Number(final[i.itemId]) !== i.suggestedPrep ? (
+                    <Badge tone="amber">Modified</Badge>
+                  ) : (
+                    <Badge tone="brand"><Check size={12} aria-hidden /> Accepted</Badge>
+                  )
                 ) : (
-                  <Badge tone="brand"><Check size={12} aria-hidden /> Accepted</Badge>
-                )
-              ) : (
-                <Button size="sm" onClick={() => accept(i)} aria-label={`Accept suggested quantity for ${i.name}`}>Accept</Button>
-              )}
+                  <Button size="sm" onClick={() => accept(i)} aria-label={`Accept suggested quantity for ${i.name}`}>Accept</Button>
+                )}
+              </div>
             </div>
-          </div>
+          ) : (
+            <span className="font-semibold text-gray-700">{fmtInt(i.suggestedPrep)}</span>
+          )
         ) : (
           <div className="flex items-center justify-end gap-2">
             <span className="font-semibold">{fmtInt(i.approvedPrep ?? 0)}</span>
@@ -244,7 +259,11 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
       align: 'right',
       cell: (i) =>
         showResults ? (
-          <QtyInput value={prepared[i.itemId] ?? ''} onChange={(v) => setOne(setPrepared, i.itemId, v)} label={`${i.name} quantity prepared`} error={showResultErrors ? resultErrors[i.itemId]?.prepared : undefined} />
+          canEditResults ? (
+            <QtyInput value={prepared[i.itemId] ?? ''} onChange={(v) => setOne(setPrepared, i.itemId, v)} label={`${i.name} quantity prepared`} error={showResultErrors ? resultErrors[i.itemId]?.prepared : undefined} />
+          ) : (
+            <span className="font-semibold text-gray-900">{i.prepared !== null ? fmtInt(i.prepared) : '—'}</span>
+          )
         ) : (
           <span className="text-gray-300">—</span>
         ),
@@ -255,7 +274,11 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
       align: 'right',
       cell: (i) =>
         showResults ? (
-          <QtyInput value={consumed[i.itemId] ?? ''} onChange={(v) => setOne(setConsumed, i.itemId, v)} label={`${i.name} quantity consumed`} error={showResultErrors || (consumed[i.itemId] ?? '') !== '' ? resultErrors[i.itemId]?.consumed : undefined} />
+          canEditResults ? (
+            <QtyInput value={consumed[i.itemId] ?? ''} onChange={(v) => setOne(setConsumed, i.itemId, v)} label={`${i.name} quantity consumed`} error={showResultErrors || (consumed[i.itemId] ?? '') !== '' ? resultErrors[i.itemId]?.consumed : undefined} />
+          ) : (
+            <span className="font-semibold text-gray-900">{i.consumed !== null ? fmtInt(i.consumed) : '—'}</span>
+          )
         ) : (
           <span className="text-gray-300">—</span>
         ),
@@ -316,33 +339,41 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
         }
         description={
           isRecommended
-            ? 'Review each recommendation: accept it or enter your own quantity. Then confirm the final plan.'
+            ? isManager
+              ? 'Review each recommendation: accept it or enter your own quantity. Then confirm the final plan.'
+              : 'Awaiting Manager Confirmation. Portion recommendations are shown for operational reference.'
             : record.status === 'approved'
               ? resultsAllowed
                 ? `Plan confirmed ${formatDateTime(record.approvedAt)}. Enter what was actually prepared and consumed after service.`
                 : `Plan confirmed ${formatDateTime(record.approvedAt)}. Actual results can be recorded on or after the service date.`
-              : `Results recorded ${formatDateTime(record.completedAt)}. You can correct them and save again.`
+              : `Results recorded ${formatDateTime(record.completedAt)}.${isManager ? ' You can correct them and save again.' : ' Record is locked.'}`
         }
         actions={
           isRecommended ? (
-            <>
-              <Button onClick={acceptAll}><CheckCheck size={15} aria-hidden /> Accept all recommendations</Button>
-              <Button variant="primary" onClick={confirmPlan} disabled={unreviewed > 0 || invalidCount > 0}>
-                <ClipboardCheck size={15} aria-hidden />{' '}
-                {unreviewed > 0
-                  ? `Review ${unreviewed} more to confirm`
-                  : invalidCount > 0
-                    ? `Fix ${invalidCount} ${invalidCount === 1 ? 'quantity' : 'quantities'} to confirm`
-                    : 'Confirm final plan'}
-              </Button>
-            </>
+            isManager ? (
+              <>
+                <Button onClick={acceptAll}><CheckCheck size={15} aria-hidden /> Accept all recommendations</Button>
+                <Button variant="primary" onClick={confirmPlan} disabled={unreviewed > 0 || invalidCount > 0}>
+                  <ClipboardCheck size={15} aria-hidden />{' '}
+                  {unreviewed > 0
+                    ? `Review ${unreviewed} more to confirm`
+                    : invalidCount > 0
+                      ? `Fix ${invalidCount} ${invalidCount === 1 ? 'quantity' : 'quantities'} to confirm`
+                      : 'Confirm final plan'}
+                </Button>
+              </>
+            ) : null
           ) : (
             <>
-              {record.status === 'approved' && <Button onClick={revise}><RotateCcw size={15} aria-hidden /> Revise plan</Button>}
-              {showResults && (
+              {record.status === 'approved' && isManager && (
+                <Button onClick={revise}><RotateCcw size={15} aria-hidden /> Revise plan</Button>
+              )}
+              {canEditResults && (
                 <>
                   <Button onClick={fillPrepared}>Fill prepared = approved</Button>
-                  <Button variant="primary" onClick={saveResults}><Save size={15} aria-hidden /> {record.status === 'completed' ? 'Update results' : 'Save results'}</Button>
+                  <Button variant="primary" onClick={saveResults}>
+                    <Save size={15} aria-hidden /> {record.status === 'completed' ? 'Update results' : 'Save results'}
+                  </Button>
                 </>
               )}
             </>
@@ -351,11 +382,17 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
         flush
       >
         {isRecommended && (
-          <div className="border-b border-gray-100 px-5 py-3">
-            <Notice tone="info">
-              Suggestions are estimates. Nothing is approved until you select Confirm final plan. Quantities are whole portions and cannot be negative.
-            </Notice>
-            {invalidCount > 0 && (
+          <div className="border-b border-gray-100 px-5 py-3 space-y-2">
+            {isManager ? (
+              <Notice tone="info" title="Awaiting Manager Confirmation">
+                Suggestions are estimates. Nothing is approved until you select Confirm final plan. Quantities are whole portions and cannot be negative.
+              </Notice>
+            ) : (
+              <Notice tone="warning" title="Awaiting Manager Confirmation">
+                Awaiting Manager Approval — do not begin preparation from this draft.
+              </Notice>
+            )}
+            {isManager && invalidCount > 0 && (
               <Notice tone="warning" title="Plan incomplete" className="mt-2">
                 {invalidCount} {invalidCount === 1 ? 'item has' : 'items have'} a missing or invalid quantity. Totals are not shown until every quantity is valid; a missing quantity is never counted as zero.
               </Notice>
@@ -364,17 +401,38 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
         )}
         {!isRecommended && !resultsAllowed && (
           <div className="border-b border-gray-100 px-5 py-3">
-            <Notice tone="info" title="Results can’t be recorded yet">
-              The service date ({formatMedium(record.date)}) is after the demo planning date ({formatMedium(DEMO_TODAY)}). Prepared and consumed quantities and actual diners can be entered on or after the service date.
+            <Notice tone="info" title="Plan Approved — Service Date Has Not Arrived">
+              Results can’t be recorded yet. The service date ({formatMedium(record.date)}) is after the demo planning date ({formatMedium(DEMO_TODAY)}). Prepared and consumed quantities and actual diners can be entered on or after the service date.
+            </Notice>
+          </div>
+        )}
+        {!isRecommended && resultsAllowed && record.status === 'approved' && (
+          <div className="border-b border-gray-100 px-5 py-3">
+            <Notice tone="synthetic" title="Plan Approved — Log Servings">
+              Preparation targets are confirmed. Record actual quantities prepared, consumed, and diners served after meal service.
+            </Notice>
+          </div>
+        )}
+        {!isRecommended && record.status === 'completed' && !isManager && (
+          <div className="border-b border-gray-100 px-5 py-3">
+            <Notice tone="info" title="Service Logged — Read Only">
+              Historical service results have been finalized. Only management can update completed records.
             </Notice>
           </div>
         )}
         {showResults && (
           <div className="grid gap-4 border-b border-gray-100 px-5 py-4 sm:grid-cols-[14rem_1fr] sm:items-end">
-            <Field label="Actual diners served" error={showResultErrors ? dinersError : undefined} hint={dinersParsed.ok && !dinersError ? `Forecast error: ${signed(record.predictedDiners - dinersParsed.value)} (predicted − actual)` : 'Whole number of diners'}>
-              {(p) => <TextInput type="number" inputMode="numeric" min={0} step={1} value={diners} onChange={(e) => setDiners(e.target.value)} {...p} />}
-            </Field>
-            {pendingResult && <p className="text-xs text-gray-500">Leftover is calculated as prepared − consumed and cannot be negative. Consumed cannot exceed prepared.</p>}
+            {canEditResults ? (
+              <Field label="Actual diners served" error={showResultErrors ? dinersError : undefined} hint={dinersParsed.ok && !dinersError ? `Forecast error: ${signed(record.predictedDiners - dinersParsed.value)} (predicted − actual)` : 'Whole number of diners'}>
+                {(p) => <TextInput type="number" inputMode="numeric" min={0} step={1} value={diners} onChange={(e) => setDiners(e.target.value)} {...p} />}
+              </Field>
+            ) : (
+              <div>
+                <p className="text-xs font-medium text-gray-500">Actual diners served</p>
+                <p className="text-base font-bold text-gray-900 tabular-nums">{record.actualDiners !== null ? fmtInt(record.actualDiners) : '—'}</p>
+              </div>
+            )}
+            {pendingResult && canEditResults && <p className="text-xs text-gray-500">Leftover is calculated as prepared − consumed and cannot be negative. Consumed cannot exceed prepared.</p>}
           </div>
         )}
         <DataTable
