@@ -18,7 +18,6 @@ export default defineConfig({
       output: { manualChunks: { charts: ['recharts'] } },
     },
   },
-  // @ts-expect-error Vitest config option in Vite
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],

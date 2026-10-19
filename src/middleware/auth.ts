@@ -44,7 +44,16 @@ export const requireAuth = async (
   // Handle verified demo/test tokens (mapped to durable PostgreSQL user rows)
   if (DEMO_TOKENS[token]) {
     const targetUid = DEMO_TOKENS[token];
-    const dbUser = await getUserByUid(targetUid);
+    let dbUser: Awaited<ReturnType<typeof getUserByUid>>;
+    try {
+      dbUser = await getUserByUid(targetUid);
+    } catch (error: any) {
+      console.error('[Auth] Database lookup failed during demo token verification:', error?.message || 'Database error');
+      return res.status(503).json({
+        error: 'Service Unavailable: Authentication database lookup failed.',
+      });
+    }
+
     if (!dbUser) {
       return res.status(401).json({ error: 'Unauthorized: Demo user record not found in database' });
     }
@@ -60,8 +69,15 @@ export const requireAuth = async (
   }
 
   // Real Firebase ID Token verification
+  let decodedToken: Awaited<ReturnType<typeof adminAuth.verifyIdToken>>;
   try {
-    const decodedToken = await adminAuth.verifyIdToken(token);
+    decodedToken = await adminAuth.verifyIdToken(token);
+  } catch (error: any) {
+    console.error('Firebase token verification failed:', error?.message || error);
+    return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
+  }
+
+  try {
     const dbUser = await getOrCreateUser(
       decodedToken.uid,
       decodedToken.email || `${decodedToken.uid}@firebase.user`,
@@ -77,8 +93,10 @@ export const requireAuth = async (
     req.dbUser = dbUser;
     return next();
   } catch (error: any) {
-    console.error('Firebase token verification failed:', error?.message || error);
-    return res.status(401).json({ error: 'Unauthorized: Invalid or expired token' });
+    console.error('[Auth] Database user sync failed:', error?.message || 'Database error');
+    return res.status(503).json({
+      error: 'Service Unavailable: Authentication database lookup failed.',
+    });
   }
 };
 

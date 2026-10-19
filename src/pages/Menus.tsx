@@ -22,17 +22,21 @@ import { SyntheticNote } from '../components/common/Notice';
 type FormState = { menu?: Menu; presetMeal?: MealType } | null;
 
 export default function Menus() {
-  const { state, dispatch } = useAppStore();
+  const { state, dispatch, currentUser } = useAppStore();
   const { notify } = useToast();
   const { menus, records } = state;
   const [selected, setSelected] = useState(DEMO_TODAY);
   const [form, setForm] = useState<FormState>(null);
   const [toDelete, setToDelete] = useState<Menu | null>(null);
 
+  const isManager = currentUser?.role === 'manager';
+  const isStudent = currentUser?.role === 'student';
+
   const hasPlan = (date: string, meal: MealType) => records.some((r) => r.id === recordId(date, meal));
   const dayMenus = menusOnDate(menus, selected);
 
   const save = (menu: Menu, previousId?: string) => {
+    if (!isManager) return;
     dispatch(previousId ? { type: 'menu/update', previousId, menu } : { type: 'menu/add', menu });
     setForm(null);
     setSelected(menu.date);
@@ -42,7 +46,7 @@ export default function Menus() {
   const policy = toDelete ? deletionPolicy(toDelete, records) : null;
 
   const confirmDelete = () => {
-    if (!toDelete || !policy || policy.kind === 'blocked') return;
+    if (!isManager || !toDelete || !policy || policy.kind === 'blocked') return;
     dispatch({ type: 'menu/delete', id: toDelete.id });
     notify(
       `${MEAL_META[toDelete.meal].label} menu deleted for ${formatLong(toDelete.date)}${policy.kind === 'removes-plan' ? ', together with its unapproved forecast' : ''}.`,
@@ -53,12 +57,18 @@ export default function Menus() {
   return (
     <>
       <PageHeader
-        title="Menus"
-        description="Plan what is served each day. Forecasts estimate demand for every item on a menu."
+        title={isStudent ? 'Weekly Menus' : 'Menus'}
+        description={
+          isStudent
+            ? 'Browse daily breakfast, lunch and dinner menus across the week.'
+            : 'Plan what is served each day. Forecasts estimate demand for every item on a menu.'
+        }
         actions={
-          <Button variant="primary" onClick={() => setForm({})}>
-            <Plus size={16} aria-hidden /> Add Menu
-          </Button>
+          isManager ? (
+            <Button variant="primary" onClick={() => setForm({})}>
+              <Plus size={16} aria-hidden /> Add Menu
+            </Button>
+          ) : undefined
         }
       />
 
@@ -78,8 +88,14 @@ export default function Menus() {
             <EmptyState
               icon={UtensilsCrossed}
               title="No menus on this date"
-              description="Add breakfast, lunch or dinner to start forecasting for this day."
-              action={<Button variant="primary" onClick={() => setForm({})}><CalendarPlus size={15} aria-hidden /> Add menu for this date</Button>}
+              description={isManager ? 'Add breakfast, lunch or dinner to start forecasting for this day.' : 'No menus have been published for this date yet.'}
+              action={
+                isManager ? (
+                  <Button variant="primary" onClick={() => setForm({})}>
+                    <CalendarPlus size={15} aria-hidden /> Add menu for this date
+                  </Button>
+                ) : undefined
+              }
             />
           )}
           {MEAL_ORDER.map((meal) => {
@@ -93,11 +109,11 @@ export default function Menus() {
                   <span className="flex flex-wrap items-center gap-2">
                     {MEAL_META[meal].label}
                     <span className="text-[13px] font-normal text-gray-500">{MEAL_META[meal].time}</span>
-                    {rec && <StatusBadge status={rec.status} />}
+                    {!isStudent && rec && <StatusBadge status={rec.status} />}
                   </span>
                 }
                 actions={
-                  menu ? (
+                  menu && isManager ? (
                     <>
                       <Button size="sm" onClick={() => setForm({ menu })} aria-label={`Edit ${MEAL_META[meal].label} menu`}><Pencil size={14} aria-hidden /> Edit</Button>
                       <Button size="sm" variant="ghost" onClick={() => setToDelete(menu)} aria-label={`Delete ${MEAL_META[meal].label} menu`} className="text-red-600 hover:bg-red-50"><Trash2 size={14} aria-hidden /> Delete</Button>
@@ -117,7 +133,9 @@ export default function Menus() {
                 ) : (
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-[13px] text-gray-500">No {MEAL_META[meal].label.toLowerCase()} menu yet.</p>
-                    <Button size="sm" onClick={() => setForm({ presetMeal: meal })}><Plus size={14} aria-hidden /> Add {MEAL_META[meal].label.toLowerCase()}</Button>
+                    {isManager && (
+                      <Button size="sm" onClick={() => setForm({ presetMeal: meal })}><Plus size={14} aria-hidden /> Add {MEAL_META[meal].label.toLowerCase()}</Button>
+                    )}
                   </div>
                 )}
               </Card>
@@ -128,7 +146,7 @@ export default function Menus() {
 
       <SyntheticNote className="mt-4" />
 
-      {form && (
+      {isManager && form && (
         <MenuFormModal
           menu={form.menu}
           presetDate={selected}

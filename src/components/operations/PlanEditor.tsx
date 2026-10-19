@@ -401,8 +401,8 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
         )}
         {!isRecommended && !resultsAllowed && (
           <div className="border-b border-gray-100 px-5 py-3">
-            <Notice tone="info" title="Plan Approved — Service Date Has Not Arrived">
-              Results can’t be recorded yet. The service date ({formatMedium(record.date)}) is after the demo planning date ({formatMedium(DEMO_TODAY)}). Prepared and consumed quantities and actual diners can be entered on or after the service date.
+            <Notice tone="info" title="Results can’t be recorded yet">
+              The service date ({formatMedium(record.date)}) is after the demo planning date ({formatMedium(DEMO_TODAY)}). Prepared and consumed quantities and actual diners can be entered on or after the service date.
             </Notice>
           </div>
         )}

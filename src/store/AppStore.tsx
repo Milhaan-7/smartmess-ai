@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useReducer, useState, type Dispatch, type ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState, type Dispatch, type ReactNode } from 'react';
 import type { MealRecord, Menu, Settings } from '../types';
 import { createSeedState, type SeedState } from '../data/mockData';
 import { DEMO_TODAY } from '../lib/constants';
@@ -84,39 +84,93 @@ export interface StoreValue {
 
 const StoreContext = createContext<StoreValue | null>(null);
 
+export function getDemoUserForToken(token: string | null): CurrentUser {
+  if (token && (token.endsWith('kitchen_staff') || token.endsWith('staff'))) {
+    return {
+      uid: 'demo-staff-uid',
+      email: 'staff@smartmess.internal',
+      name: 'Ramesh Chef (Kitchen Staff)',
+      role: 'kitchen_staff',
+    };
+  }
+  if (token && token.endsWith('student')) {
+    return {
+      uid: 'demo-student-uid',
+      email: 'student@smartmess.internal',
+      name: 'Aarav Student (Diner)',
+      role: 'student',
+    };
+  }
+  return {
+    uid: 'demo-manager-uid',
+    email: 'manager@smartmess.internal',
+    name: 'Meera Krishnan (Manager)',
+    role: 'manager',
+  };
+}
+
 export function AppStoreProvider({ children }: { children: ReactNode }) {
   const [state, rawDispatch] = useReducer(reducer, undefined, createSeedState);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentUser, setCurrentUser] = useState<CurrentUser | null>({
-    uid: 'demo-manager-uid',
-    email: 'manager@smartmess.internal',
-    name: 'Meera Krishnan (Manager)',
-    role: 'manager',
-  });
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() => getDemoUserForToken(getAuthToken()));
+  const isMountedRef = useRef(true);
 
   const loadData = async () => {
     try {
+      if (!isMountedRef.current) return;
       setSyncing(true);
       setError(null);
 
       // Verify or establish session
       let token = getAuthToken();
+      let resolvedUser: CurrentUser;
       if (!token) {
-        const session = await api.loginSession({ demoRole: 'manager' });
-        token = session.token;
+        token = 'demo-token-manager';
         setAuthToken(token);
-        setCurrentUser(session.user);
+        resolvedUser = getDemoUserForToken(token);
+        setCurrentUser(resolvedUser);
+        try {
+          const session = await api.loginSession({ demoRole: 'manager' });
+          if (!isMountedRef.current) return;
+          token = session.token;
+          setAuthToken(token);
+          resolvedUser = session.user;
+          setCurrentUser(resolvedUser);
+        } catch {
+          // Preserve resolved local demo user when backend is offline
+        }
       } else {
+        resolvedUser = getDemoUserForToken(token);
+        setCurrentUser(resolvedUser);
         try {
           const me = await api.getMe();
-          setCurrentUser(me.user);
+          if (!isMountedRef.current) return;
+          resolvedUser = me.user;
+          setCurrentUser(resolvedUser);
         } catch {
-          const session = await api.loginSession({ demoRole: 'manager' });
-          setAuthToken(session.token);
-          setCurrentUser(session.user);
+          // Preserve resolved local demo user for the active token when backend is offline
+          if (isMountedRef.current) {
+            setCurrentUser(resolvedUser);
+          }
         }
+      }
+
+      if (!isMountedRef.current) return;
+
+      if (resolvedUser.role === 'student') {
+        const remoteMenus = await api.getMenus();
+        if (!isMountedRef.current) return;
+        rawDispatch({
+          type: 'init',
+          data: {
+            settings: state.settings,
+            menus: remoteMenus,
+            records: [],
+          },
+        });
+        return;
       }
 
       const [remoteSettings, remoteMenus, remoteRecords] = await Promise.all([
@@ -124,6 +178,8 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         api.getMenus(),
         api.getRecords(),
       ]);
+
+      if (!isMountedRef.current) return;
 
       if (remoteMenus.length > 0 || remoteRecords.length > 0) {
         rawDispatch({
@@ -136,29 +192,46 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
         });
       }
     } catch (err: any) {
-      console.warn('[AppStore] Sync with backend deferred or using cached state:', err?.message || err);
+      if (isMountedRef.current) {
+        console.warn('[AppStore] Sync with backend deferred or using cached state:', err?.message || err);
+      }
     } finally {
-      setLoading(false);
-      setSyncing(false);
+      if (isMountedRef.current) {
+        setLoading(false);
+        setSyncing(false);
+      }
     }
   };
 
   useEffect(() => {
-    loadData();
+    isMountedRef.current = true;
+    void loadData();
+    return () => {
+      isMountedRef.current = false;
+    };
   }, []);
 
   const switchRole = async (role: UserRole) => {
+    const fallbackToken = `demo-token-${role}`;
+    setAuthToken(fallbackToken);
+    if (isMountedRef.current) {
+      setCurrentUser(getDemoUserForToken(fallbackToken));
+    }
     try {
-      setSyncing(true);
+      if (isMountedRef.current) setSyncing(true);
       const session = await api.loginSession({ demoRole: role });
+      if (!isMountedRef.current) return;
       setAuthToken(session.token);
       setCurrentUser(session.user);
       await loadData();
     } catch (err: any) {
-      console.error('Failed to switch role:', err);
-      setError(err?.message || 'Role switch failed');
+      if (isMountedRef.current) {
+        console.warn('Failed to switch role via API, using demo fallback:', err);
+      }
     } finally {
-      setSyncing(false);
+      if (isMountedRef.current) {
+        setSyncing(false);
+      }
     }
   };
 
@@ -174,6 +247,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
           items: action.menu.items,
         })
         .catch((err) => {
+          if (!isMountedRef.current) return;
           console.warn('[API Sync] createMenu note:', err?.message);
           setError(err?.message || 'Failed to persist new menu to database');
         });
@@ -185,11 +259,13 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
           items: action.menu.items,
         })
         .catch((err) => {
+          if (!isMountedRef.current) return;
           console.warn('[API Sync] updateMenu note:', err?.message);
           setError(err?.message || 'Failed to update menu in database');
         });
     } else if (action.type === 'menu/delete') {
       api.deleteMenu(action.id).catch((err) => {
+        if (!isMountedRef.current) return;
         console.warn('[API Sync] deleteMenu note:', err?.message);
         setError(err?.message || 'Failed to delete menu in database');
       });
@@ -198,17 +274,20 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       const existing = state.records.find((r) => r.id === action.record.id);
       if (existing) {
         api.updateRecord(action.record.id, action.record).catch((err) => {
+          if (!isMountedRef.current) return;
           console.warn('[API Sync] updateRecord note:', err?.message);
           setError(err?.message || 'Failed to update meal record in database');
         });
       } else {
         api.createRecord(action.record).catch((err) => {
+          if (!isMountedRef.current) return;
           console.warn('[API Sync] createRecord note:', err?.message);
           setError(err?.message || 'Failed to create meal record in database');
         });
       }
     } else if (action.type === 'settings/update') {
       api.updateSettings(action.settings).catch((err) => {
+        if (!isMountedRef.current) return;
         console.warn('[API Sync] updateSettings note:', err?.message);
         setError(err?.message || 'Failed to save settings to database');
       });

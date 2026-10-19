@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import path from 'path';
@@ -19,8 +20,8 @@ async function startServer() {
   // Seed database with reproducible baseline dataset if tables are empty
   try {
     await seedDatabaseIfEmpty();
-  } catch (err) {
-    console.warn('[Server] Seed check deferred or non-fatal:', err);
+  } catch (err: any) {
+    console.warn('[Server] Seed check deferred or non-fatal:', err?.message || 'Database unavailable');
   }
 
   if (!isProduction) {

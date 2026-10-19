@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { eq, and, gte, lte, asc } from 'drizzle-orm';
-import { db, pool } from '../db/index.ts';
+import { db, pool, DatabaseConfigurationError } from '../db/index.ts';
 import { menus, menuItems, mealRecords, recordItems, messSettings } from '../db/schema.ts';
 import { getUsers, getUserByUid, updateUserRole, getOrCreateUser, UserRole } from '../db/users.ts';
 import { requireAuth, requireRole, type AuthRequest, DEMO_TOKENS } from '../middleware/auth.ts';
@@ -32,11 +32,13 @@ apiRouter.get('/health', async (req: Request, res: Response) => {
       client.release();
     }
   } catch (error: any) {
-    console.error('[Health] DB ping failed:', error);
+    console.error('[Health] DB ping failed:', error?.message || 'Database unreachable');
+    const safeErrorMessage =
+      error instanceof DatabaseConfigurationError ? error.message : 'Database unreachable';
     res.status(503).json({
       status: 'degraded',
       database: 'disconnected',
-      error: error?.message || 'Database unreachable',
+      error: safeErrorMessage,
       timestamp: new Date().toISOString(),
     });
   }
@@ -53,7 +55,15 @@ apiRouter.post('/auth/session', async (req: Request, res: Response) => {
       }
       const demoToken = `demo-token-${demoRole}`;
       const targetUid = DEMO_TOKENS[demoToken];
-      const dbUser = await getUserByUid(targetUid);
+      let dbUser: Awaited<ReturnType<typeof getUserByUid>>;
+      try {
+        dbUser = await getUserByUid(targetUid);
+      } catch (dbErr: any) {
+        console.error('[Auth Session] Database lookup failed:', dbErr?.message || 'Database error');
+        return res.status(503).json({
+          error: 'Service Unavailable: Authentication database lookup failed.',
+        });
+      }
       return res.json({
         token: demoToken,
         user: {
@@ -66,18 +76,32 @@ apiRouter.post('/auth/session', async (req: Request, res: Response) => {
     }
 
     if (token) {
-      const decoded = await adminAuth.verifyIdToken(token);
+      let decoded: Awaited<ReturnType<typeof adminAuth.verifyIdToken>>;
+      try {
+        decoded = await adminAuth.verifyIdToken(token);
+      } catch (verifyErr: any) {
+        console.error('[Auth Session] Token verification error:', verifyErr?.message || verifyErr);
+        return res.status(401).json({ error: 'Authentication exchange failed' });
+      }
+
       const email = decoded.email || `${decoded.uid}@firebase.user`;
-      const dbUser = await getOrCreateUser(decoded.uid, email, (decoded as any).name);
-      return res.json({
-        token,
-        user: {
-          uid: dbUser.uid,
-          email: dbUser.email,
-          name: dbUser.displayName || dbUser.email,
-          role: dbUser.role as UserRole,
-        },
-      });
+      try {
+        const dbUser = await getOrCreateUser(decoded.uid, email, (decoded as any).name);
+        return res.json({
+          token,
+          user: {
+            uid: dbUser.uid,
+            email: dbUser.email,
+            name: dbUser.displayName || dbUser.email,
+            role: dbUser.role as UserRole,
+          },
+        });
+      } catch (dbErr: any) {
+        console.error('[Auth Session] Database user sync failed:', dbErr?.message || 'Database error');
+        return res.status(503).json({
+          error: 'Service Unavailable: Authentication database lookup failed.',
+        });
+      }
     }
 
     return res.status(400).json({ error: 'Missing token or demoRole parameter' });

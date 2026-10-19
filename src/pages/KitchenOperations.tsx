@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { CalendarOff, ClipboardX, Loader2 } from 'lucide-react';
 import type { MealType } from '../types';
 import { useAppStore } from '../store/AppStore';
@@ -7,7 +7,7 @@ import { DEMO_TODAY, MEAL_META, MEAL_OPTIONS } from '../lib/constants';
 import { formatLong, isValidDateString } from '../lib/dates';
 import { hrefFor, useRoute } from '../lib/router';
 import { findMenu } from '../services/menuService';
-import { runForecast } from '../services/mockForecastService';
+import { computeForecast, runForecast } from '../services/mockForecastService';
 import { recordFromForecast, recordId } from '../services/operationsService';
 import { PageHeader } from '../components/common/PageHeader';
 import { Card } from '../components/common/Card';
@@ -19,7 +19,7 @@ import { Notice, SyntheticNote } from '../components/common/Notice';
 import { PlanEditor } from '../components/operations/PlanEditor';
 
 export default function KitchenOperations() {
-  const { state, dispatch } = useAppStore();
+  const { state, dispatch, currentUser } = useAppStore();
   const { notify } = useToast();
   const { params } = useRoute();
   const { menus, records, settings } = state;
@@ -35,7 +35,18 @@ export default function KitchenOperations() {
 
   const validDate = isValidDateString(date);
   const menu = validDate ? findMenu(menus, date, meal) : undefined;
-  const record = validDate ? records.find((r) => r.id === recordId(date, meal)) : undefined;
+  const savedRecord = validDate ? records.find((r) => r.id === recordId(date, meal)) : undefined;
+  const record = useMemo(() => {
+    if (savedRecord) return savedRecord;
+    if (menu && currentUser?.role === 'kitchen_staff') {
+      try {
+        return recordFromForecast(computeForecast({ date, meal, menu, history: records, settings, context: 'normal' }));
+      } catch {
+        return undefined;
+      }
+    }
+    return undefined;
+  }, [savedRecord, menu, currentUser?.role, date, meal, records, settings]);
 
   const generate = async () => {
     if (!menu) return;
