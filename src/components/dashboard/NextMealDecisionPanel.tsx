@@ -35,8 +35,8 @@ export function NextMealDecisionPanel({
   }
 
   const mealMeta = MEAL_META[next.meal];
-  const isRecommended = next.record?.status === 'recommended';
-  const isApproved = next.record?.status === 'approved';
+  const isApproved = next.record?.status === 'approved' || next.status === 'approved';
+  const isRecommended = (next.record?.status === 'recommended' || next.status === 'recommended' || next.status === 'not_planned') && !isApproved;
 
   // Calculate total kg of suggested food preparation from existing items and portion weights
   const totalSuggestedKg = preview?.items

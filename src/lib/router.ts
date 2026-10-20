@@ -8,6 +8,7 @@ export const PAGE_PATHS: Record<PageId, string> = {
   operations: '/kitchen-operations',
   waste: '/waste-analytics',
   settings: '/settings',
+  login: '/login',
 };
 
 export interface Route {
@@ -21,8 +22,9 @@ export function parseHash(hash: string): Route {
   const raw = hash.replace(/^#/, '') || '/';
   const [path, query = ''] = raw.split('?');
   const entry = (Object.entries(PAGE_PATHS) as [PageId, string][]).find(([, p]) => p === path);
-  return { page: entry ? entry[0] : 'dashboard', params: new URLSearchParams(query), raw };
+  return { page: entry ? entry[0] : (path === '/login' ? 'login' : 'dashboard'), params: new URLSearchParams(query), raw };
 }
+
 
 export function hrefFor(page: PageId, params?: Record<string, string>): string {
   const query = params ? new URLSearchParams(params).toString() : '';

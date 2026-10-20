@@ -15,6 +15,8 @@ let currentAuthToken: string | null = (() => {
   }
 })();
 
+
+
 export function setAuthToken(token: string | null) {
   currentAuthToken = token;
   try {
@@ -157,4 +159,23 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(settings),
     }),
+
+  getAiInsights: (data: {
+    date: string;
+    meal: string;
+    predictedDiners: number;
+    baselineDiners: number | null;
+    context: string;
+    items?: Array<{ name: string; suggestedPrep: number }>;
+  }) =>
+    request<{
+      available: boolean;
+      reason?: string;
+      model?: string;
+      insights: string[];
+    }>('/forecast/ai-insights', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
+

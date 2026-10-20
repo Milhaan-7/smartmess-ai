@@ -48,7 +48,8 @@ function QtyInput({ value, onChange, label, error, disabled }: { value: string; 
 
 export function PlanEditor({ record, onSave }: PlanEditorProps) {
   const { notify } = useToast();
-  const { currentUser } = useAppStore();
+  const { currentUser, dispatch } = useAppStore();
+
 
   const isManager = currentUser?.role === 'manager';
   const isStaff = currentUser?.role === 'kitchen_staff';
@@ -103,9 +104,22 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
       return;
     }
     const quantities = Object.fromEntries(record.items.map((i) => [i.itemId, Number(final[i.itemId])]));
-    onSave(approvePlan(record, quantities, new Date().toISOString()));
+    const approvedRecord = approvePlan(record, quantities, new Date().toISOString());
+    onSave(approvedRecord);
+    dispatch({
+      type: 'notification/add',
+      notification: {
+        title: `Today's ${record.meal.toUpperCase()} menu approved`,
+        message: `The manager has authorized the ${record.meal} menu for ${record.date}. View portion weights and service hours.`,
+        type: 'daily',
+        date: record.date,
+        meal: record.meal,
+        linkHash: `#/menus?date=${record.date}`,
+      },
+    });
     notify(`Plan confirmed${modifiedCount ? ` with ${modifiedCount} modified ${modifiedCount === 1 ? 'quantity' : 'quantities'}` : ''}. You can now record actual results.`);
   };
+
 
   const revise = () => {
     if (!isManager) return;
@@ -444,10 +458,52 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
           </div>
         )}
         {!isRecommended && resultsAllowed && record.status === 'approved' && (
-          <div className="border-b border-gray-100 px-5 py-3">
+          <div className="border-b border-gray-100 px-5 py-3 space-y-3">
             <Notice tone="synthetic" title="Plan Approved — Log Servings">
               Preparation targets are confirmed. Record actual quantities prepared, consumed, and diners served after meal service.
             </Notice>
+
+            {/* Prominent Approved Kitchen Preparation Targets Checklist */}
+            <div className="rounded-lg border border-brand-200/80 bg-brand-50/40 p-3">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brand-100/80 pb-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-700 text-[10px] font-bold text-white">✓</span>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-brand-900">
+                    Authorized Preparation Targets for Culinary Staff
+                  </p>
+                </div>
+                <span className="text-xs font-medium text-brand-800">
+                  Total Approved: <strong className="font-bold font-mono">{fmtKg(approvedKg(record))}</strong>
+                </span>
+              </div>
+              <div className="mt-2.5 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                {record.items.map((item) => {
+                  const prepPortions = item.approvedPrep ?? item.suggestedPrep;
+                  const itemKg = prepPortions * item.kgPerPortion;
+                  return (
+                    <div
+                      key={item.itemId}
+                      className="flex items-center justify-between rounded-md border border-brand-100 bg-white px-3 py-2 text-xs shadow-2xs"
+                    >
+                      <div className="min-w-0 pr-2">
+                        <p className="truncate font-semibold text-slate-900">{item.name}</p>
+                        <p className="text-[11px] text-slate-500 font-mono">
+                          {item.kgPerPortion < 0.1 ? `${Math.round(item.kgPerPortion * 1000)}g` : `${item.kgPerPortion} kg`}/portion
+                        </p>
+                      </div>
+                      <div className="shrink-0 text-right">
+                        <span className="block font-bold font-mono text-brand-800 text-sm tabular-nums">
+                          {fmtInt(prepPortions)} <span className="text-[10px] font-normal text-slate-500">portions</span>
+                        </span>
+                        <span className="text-[11px] font-medium text-slate-500 font-mono tabular-nums">
+                          {fmtNum(itemKg, 1)} kg
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         )}
         {!isRecommended && record.status === 'completed' && !isManager && (

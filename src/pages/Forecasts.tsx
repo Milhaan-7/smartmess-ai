@@ -21,11 +21,14 @@ import { Notice, SyntheticNote } from '../components/common/Notice';
 import { Badge, StatusBadge } from '../components/common/Badge';
 import { BaselineComparisonChart } from '../components/charts/BaselineComparisonChart';
 
+import { AiInsightsCard } from '../components/dashboard/AiInsightsCard';
+
 interface RunInputs {
   date: string;
   meal: MealType;
   context: SpecialDay;
 }
+
 
 export default function Forecasts() {
   const { state, dispatch } = useAppStore();
@@ -237,7 +240,17 @@ export default function Forecasts() {
               </div>
             </div>
 
+            <AiInsightsCard
+              date={forecast.date}
+              meal={forecast.meal}
+              predictedDiners={forecast.predictedDiners}
+              baselineDiners={forecast.baselineDiners}
+              context={forecast.context}
+              items={forecast.items.map((i) => ({ name: i.name, suggestedPrep: i.suggestedPrep }))}
+            />
+
             <Card
+
               title="Item-level demand and recommended preparation"
               description="Predicted demand is what diners are expected to eat. Recommended prep adds a buffer and is rounded up to a serving step."
               flush

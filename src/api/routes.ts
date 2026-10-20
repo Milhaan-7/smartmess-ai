@@ -769,3 +769,74 @@ apiRouter.put('/settings', requireAuth, requireRole(['manager']), async (req: Re
     res.status(500).json({ error: 'Failed to update settings' });
   }
 });
+
+// 16. POST /api/v1/forecast/ai-insights (Gemini AI Insights)
+apiRouter.post('/forecast/ai-insights', async (req: Request, res: Response) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+  const { date, meal, predictedDiners, baselineDiners, context, items } = req.body || {};
+
+  if (!apiKey) {
+    return res.json({
+      available: false,
+      reason: 'Server GEMINI_API_KEY environment variable unconfigured',
+      insights: [
+        `Historical demand baseline for ${meal || 'service'} is ${baselineDiners ?? 450} diners; model predicted ${predictedDiners ?? 480} diners based on ${context || 'normal'} campus schedule.`,
+        `Safety buffer covers expected variance. Monitor line prep execution closely for high-volume main dishes.`,
+        `End-of-service surplus should be logged in Kitchen Operations to continuously improve future forecast accuracy.`
+      ]
+    });
+  }
+
+  try {
+    const { GoogleGenAI } = await import('@google/genai');
+    const ai = new GoogleGenAI({ apiKey });
+    const prompt = `You are an expert AI culinary waste reduction analyst for university dining halls.
+Analyze this meal forecast data:
+- Date: ${date}
+- Meal: ${meal}
+- Campus Context: ${context}
+- Predicted Diners: ${predictedDiners}
+- Baseline Diners: ${baselineDiners}
+- Key Dishes: ${Array.isArray(items) ? items.map((i: any) => `${i.name} (${i.suggestedPrep} portions)`).join(', ') : 'Standard menu'}
+
+Provide 3 concise, highly actionable operational bullet points for the Kitchen Manager and Staff:
+1. Expected demand & attendance risk factor analysis.
+2. Kitchen batch prep & buffer recommendation.
+3. Specific food waste mitigation advice.
+Keep each bullet point under 25 words. Plain text bullets without markdown or conversational filler.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.8-flash',
+      contents: prompt,
+    });
+
+    const text = response.text || '';
+    const bullets = text
+      .split('\n')
+      .map((line) => line.replace(/^[\*\-\d\.\s]+/, '').trim())
+      .filter((line) => line.length > 5)
+      .slice(0, 3);
+
+    return res.json({
+      available: true,
+      model: 'gemini-3.8-flash',
+      insights: bullets.length >= 3 ? bullets : [
+        `Predicted demand is ${predictedDiners} diners (${context} context).`,
+        `Stage cooking in 2 batches to prevent over-preparation.`,
+        `Log residual leftovers to maintain historical accuracy.`
+      ],
+    });
+  } catch (err: any) {
+    console.warn('[Gemini AI Insights] API call error or quota exceeded:', err?.message || err);
+    return res.json({
+      available: false,
+      reason: `Gemini API Error: ${err?.message || 'Call failed'}`,
+      insights: [
+        `Historical demand baseline for ${meal || 'service'} is ${baselineDiners ?? 450} diners; model predicted ${predictedDiners ?? 480} diners.`,
+        `Safety buffer covers expected variance. Monitor line prep execution closely.`,
+        `End-of-service surplus should be logged in Kitchen Operations.`
+      ]
+    });
+  }
+});
+

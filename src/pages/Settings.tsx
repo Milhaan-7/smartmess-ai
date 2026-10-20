@@ -153,13 +153,30 @@ export default function Settings() {
             <Notice tone="info" className="mt-4" title="Demonstration Environment Disclosure">
               Attendance and waste baseline data originate from reproducible models in Cloud SQL PostgreSQL. Forecasts are calculated strictly using historical demand averages and configured buffer rules.
             </Notice>
-            <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
-              <p className="text-[13px] text-gray-600">Restore factory baseline configuration and demo data.</p>
-              <Button variant="danger" size="sm" onClick={() => setConfirmReset(true)}><RotateCcw size={14} aria-hidden /> Reset demo data</Button>
-            </div>
-          </Card>
+              <div className="mt-4 flex items-center justify-between gap-3 border-t border-gray-100 pt-4">
+                <p className="text-[13px] text-gray-600">Restore factory baseline configuration and demo data.</p>
+                <Button variant="danger" size="sm" onClick={() => setConfirmReset(true)}><RotateCcw size={14} aria-hidden /> Reset demo data</Button>
+              </div>
+            </Card>
+
+            <Card title="n8n Workflow Automation" description="External webhook automation for plan approval alerts.">
+              <ul className="divide-y divide-gray-100 text-[13px]">
+                <li className="flex items-start gap-3 py-2">
+                  <Server size={18} className="mt-0.5 text-amber-600" aria-hidden />
+                  <div className="flex-1">
+                    <p className="font-medium text-gray-900">Plan Approval Webhook</p>
+                    <p className="text-gray-600">Triggers external n8n workflows upon plan approval to dispatch kitchen notifications.</p>
+                  </div>
+                  <Badge tone="amber">NOT CONNECTED</Badge>
+                </li>
+              </ul>
+              <p className="mt-3 text-xs text-gray-500 bg-gray-50 p-2.5 rounded-lg border border-gray-100">
+                <strong>Configuration Status:</strong> <code>N8N_WEBHOOK_URL</code> environment variable is unconfigured in this workspace preview. Integration point is ready for production hookup.
+              </p>
+            </Card>
+          </div>
         </div>
-      </div>
+
 
       {confirmReset && (
         <ConfirmDialog title="Reset demo data?" confirmLabel="Reset data" danger onConfirm={doReset} onCancel={() => setConfirmReset(false)}>

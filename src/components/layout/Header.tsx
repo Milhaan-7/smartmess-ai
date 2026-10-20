@@ -1,16 +1,15 @@
-import { Bell, Building2, Check, ChevronDown, Menu as MenuIcon, Settings as SettingsIcon } from 'lucide-react';
+import { Bell, Building2, Check, ChevronDown, Menu as MenuIcon, Settings as SettingsIcon, LogOut, CheckCheck, Trash2 } from 'lucide-react';
 import type { PageId } from '../../types';
 import { useAppStore } from '../../store/AppStore';
 import { DEMO_TODAY } from '../../lib/constants';
 import { formatMedium } from '../../lib/dates';
 import { hrefFor } from '../../lib/router';
-import { buildNotifications } from '../../services/planningService';
 import { Popover } from '../common/Popover';
 import { Badge } from '../common/Badge';
 import { NAV_ITEMS } from './Sidebar';
 
 export function Header({ page, onMenu }: { page: PageId; onMenu: () => void }) {
-  const { state, currentUser, switchRole } = useAppStore();
+  const { state, dispatch, currentUser, switchRole, logout } = useAppStore();
   const { settings } = state;
   const roleTitle =
     page === 'dashboard'
@@ -20,8 +19,9 @@ export function Header({ page, onMenu }: { page: PageId; onMenu: () => void }) {
           ? 'Kitchen Board'
           : 'Dashboard'
       : NAV_ITEMS.find((n) => n.id === page)?.label ?? 'Dashboard';
-  const notifications = buildNotifications(state, DEMO_TODAY);
-  const actionable = notifications.filter((n) => n.tone === 'warning').length;
+
+  const notifs = state.notifications || [];
+  const unreadCount = notifs.filter((n) => !n.read).length;
   const displayName = currentUser?.name || settings.messManager;
   const initials = displayName
     .split(' ')
@@ -69,7 +69,7 @@ export function Header({ page, onMenu }: { page: PageId; onMenu: () => void }) {
               <p className="text-xs text-gray-500">{settings.messName}</p>
             </div>
           </div>
-          <p className="px-3 py-2 text-xs text-gray-500">Fictional institution. Switching between multiple institutions is not implemented in this demo.</p>
+          <p className="px-3 py-2 text-xs text-gray-500">Fictional institution. Demonstration profile loaded.</p>
         </div>
       </Popover>
 
@@ -79,15 +79,15 @@ export function Header({ page, onMenu }: { page: PageId; onMenu: () => void }) {
       </div>
 
       <Popover
-        ariaLabel={`Notifications, ${actionable} need attention`}
+        ariaLabel={`Notifications, ${unreadCount} unread`}
         triggerClassName="relative rounded-lg p-2 text-gray-600 hover:bg-gray-100"
         panelClassName="w-80 max-w-[calc(100vw-2rem)]"
         trigger={
           <>
             <Bell size={19} aria-hidden />
-            {actionable > 0 && (
-              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-amber-500 px-1 text-[10px] font-semibold text-white">
-                {actionable}
+            {unreadCount > 0 && (
+              <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-brand-600 px-1 text-[10px] font-semibold text-white shadow-xs">
+                {unreadCount}
               </span>
             )}
           </>
@@ -95,20 +95,68 @@ export function Header({ page, onMenu }: { page: PageId; onMenu: () => void }) {
       >
         {(close) => (
           <div>
-            <p className="border-b border-gray-100 px-4 py-3 text-sm font-semibold text-gray-900">Notifications</p>
+            <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-gray-900">Menu Notifications</p>
+                {unreadCount > 0 && <Badge tone="brand">{unreadCount} new</Badge>}
+              </div>
+              <div className="flex items-center gap-1 text-xs">
+                {unreadCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: 'notification/markAllRead' })}
+                    title="Mark all as read"
+                    className="p-1 text-gray-500 hover:text-brand-700 rounded hover:bg-gray-100"
+                  >
+                    <CheckCheck size={14} />
+                  </button>
+                )}
+                {notifs.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => dispatch({ type: 'notification/clearAll' })}
+                    title="Clear all"
+                    className="p-1 text-gray-500 hover:text-red-600 rounded hover:bg-gray-100"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
+
             <ul className="max-h-80 divide-y divide-gray-100 overflow-y-auto">
-              {notifications.map((n) => (
-                <li key={n.id}>
-                  <a href={hrefFor(n.page, n.params)} onClick={close} className="block px-4 py-3 hover:bg-gray-50">
-                    <p className="flex items-center gap-2 text-[13px] font-medium text-gray-900">
-                      {n.title}
-                      {n.tone === 'warning' && <Badge tone="amber">Action</Badge>}
-                    </p>
-                    <p className="mt-0.5 text-xs text-gray-500">{n.detail}</p>
-                  </a>
+              {notifs.length === 0 ? (
+                <li className="p-6 text-center text-xs text-gray-500">
+                  No notifications yet. Approved menus will appear here.
                 </li>
-              ))}
+              ) : (
+                notifs.map((n) => (
+                  <li key={n.id} className={n.read ? 'bg-white' : 'bg-brand-50/40 font-medium'}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        dispatch({ type: 'notification/markRead', id: n.id });
+                        window.location.hash = n.linkHash;
+                        close();
+                      }}
+                      className="block w-full px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-[13px] font-semibold text-gray-900">{n.title}</p>
+                        {!n.read && <span className="h-2 w-2 rounded-full bg-brand-600 shrink-0" />}
+                      </div>
+                      <p className="mt-0.5 text-xs text-gray-600 leading-snug">{n.message}</p>
+                      <p className="mt-1.5 text-[10px] text-brand-700 font-semibold">
+                        {n.type === 'weekly' ? 'Weekly Menu' : 'Daily Approval'} · View Approved Menu →
+                      </p>
+                    </button>
+                  </li>
+                ))
+              )}
             </ul>
+            <div className="border-t border-gray-100 px-4 py-2 text-[10px] text-gray-400 text-center">
+              Notifications stored in local browser demo session
+            </div>
           </div>
         )}
       </Popover>
@@ -154,7 +202,7 @@ export function Header({ page, onMenu }: { page: PageId; onMenu: () => void }) {
             </div>
 
             <div className="space-y-1">
-              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Switch Demo Role (Server-Enforced)</p>
+              <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">Switch Demo Persona</p>
               <button
                 type="button"
                 onClick={() => {
@@ -196,8 +244,8 @@ export function Header({ page, onMenu }: { page: PageId; onMenu: () => void }) {
               </button>
             </div>
 
-            {currentUser?.role === 'manager' && (
-              <div className="border-t border-gray-100 pt-2">
+            <div className="border-t border-gray-100 pt-2 space-y-1">
+              {currentUser?.role === 'manager' && (
                 <a
                   href={hrefFor('settings')}
                   onClick={close}
@@ -205,11 +253,22 @@ export function Header({ page, onMenu }: { page: PageId; onMenu: () => void }) {
                 >
                   <SettingsIcon size={14} aria-hidden /> Institutional Settings
                 </a>
-              </div>
-            )}
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  close();
+                  logout();
+                }}
+                className="flex w-full items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-red-600 hover:bg-red-50 text-left font-medium"
+              >
+                <LogOut size={14} aria-hidden /> Sign Out
+              </button>
+            </div>
           </div>
         )}
       </Popover>
     </header>
   );
 }
+

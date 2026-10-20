@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState, type Dispatch, type ReactNode } from 'react';
-import type { MealRecord, Menu, Settings } from '../types';
+import type { AppNotification, MealRecord, Menu, Settings } from '../types';
 import { createSeedState, type SeedState } from '../data/mockData';
 import { DEMO_TODAY } from '../lib/constants';
 import { deletionPolicy } from '../services/menuService';
@@ -22,7 +22,11 @@ export type AppAction =
   | { type: 'menu/delete'; id: string }
   | { type: 'record/upsert'; record: MealRecord }
   | { type: 'settings/update'; settings: Settings }
-  | { type: 'init'; data: { settings: Settings; menus: Menu[]; records: MealRecord[] } }
+  | { type: 'notification/add'; notification: Omit<AppNotification, 'id' | 'timestamp' | 'read'> }
+  | { type: 'notification/markRead'; id: string }
+  | { type: 'notification/markAllRead' }
+  | { type: 'notification/clearAll' }
+  | { type: 'init'; data: { settings: Settings; menus: Menu[]; records: MealRecord[]; notifications?: AppNotification[] } }
   | { type: 'reset' };
 
 export function reducer(state: AppState, action: AppAction): AppState {
@@ -32,6 +36,7 @@ export function reducer(state: AppState, action: AppAction): AppState {
         settings: action.data.settings,
         menus: action.data.menus,
         records: action.data.records,
+        notifications: action.data.notifications || state.notifications || [],
       };
     case 'menu/add':
       return state.menus.some((m) => m.id === action.menu.id)
@@ -66,6 +71,43 @@ export function reducer(state: AppState, action: AppAction): AppState {
     }
     case 'settings/update':
       return { ...state, settings: action.settings };
+    case 'notification/add': {
+      const now = new Date().toISOString();
+      const existingIndex = (state.notifications || []).findIndex(
+        (n) =>
+          n.title === action.notification.title ||
+          (n.date === action.notification.date && n.meal === action.notification.meal && n.type === action.notification.type)
+      );
+      if (existingIndex >= 0) {
+        const updated = [...(state.notifications || [])];
+        updated[existingIndex] = {
+          ...updated[existingIndex],
+          message: action.notification.message,
+          timestamp: now,
+          read: false,
+        };
+        return { ...state, notifications: updated };
+      }
+      const newNotif: AppNotification = {
+        ...action.notification,
+        id: `notif-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        timestamp: now,
+        read: false,
+      };
+      return { ...state, notifications: [newNotif, ...(state.notifications || [])] };
+    }
+    case 'notification/markRead':
+      return {
+        ...state,
+        notifications: (state.notifications || []).map((n) => (n.id === action.id ? { ...n, read: true } : n)),
+      };
+    case 'notification/markAllRead':
+      return {
+        ...state,
+        notifications: (state.notifications || []).map((n) => ({ ...n, read: true })),
+      };
+    case 'notification/clearAll':
+      return { ...state, notifications: [] };
     case 'reset': {
       if (typeof window !== 'undefined' && window.localStorage) {
         try {
@@ -94,6 +136,9 @@ export function getInitialState(): AppState {
           Array.isArray(parsed.records) &&
           parsed.settings
         ) {
+          if (!Array.isArray(parsed.notifications)) {
+            parsed.notifications = createSeedState().notifications;
+          }
           return parsed;
         }
       }
@@ -112,13 +157,16 @@ export interface StoreValue {
   error: string | null;
   currentUser: CurrentUser | null;
   switchRole: (role: UserRole) => Promise<void>;
+  logout: () => void;
   refreshData: () => Promise<void>;
 }
 
+
 const StoreContext = createContext<StoreValue | null>(null);
 
-export function getDemoUserForToken(token: string | null): CurrentUser {
-  if (token && (token.endsWith('kitchen_staff') || token.endsWith('staff'))) {
+export function getDemoUserForToken(token: string | null): CurrentUser | null {
+  if (!token) return null;
+  if (token.endsWith('kitchen_staff') || token.endsWith('staff')) {
     return {
       uid: 'demo-staff-uid',
       email: 'staff@smartmess.internal',
@@ -126,7 +174,7 @@ export function getDemoUserForToken(token: string | null): CurrentUser {
       role: 'kitchen_staff',
     };
   }
-  if (token && token.endsWith('student')) {
+  if (token.endsWith('student')) {
     return {
       uid: 'demo-student-uid',
       email: 'student@smartmess.internal',
@@ -153,12 +201,23 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (typeof window !== 'undefined' && window.localStorage) {
       try {
+        if (currentUser?.role === 'student' && state.records.length === 0) {
+          // If in student mode with empty records in state, preserve the stored records in localStorage
+          const stored = window.localStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            if (parsed && Array.isArray(parsed.records) && parsed.records.length > 0) {
+              window.localStorage.setItem(STORAGE_KEY, JSON.stringify({ ...state, records: parsed.records }));
+              return;
+            }
+          }
+        }
         window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
       } catch {
         // Ignore quota/access errors
       }
     }
-  }, [state]);
+  }, [state, currentUser?.role]);
 
   const loadData = async () => {
     try {
@@ -168,39 +227,28 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
       // Verify or establish session
       let token = getAuthToken();
-      let resolvedUser: CurrentUser;
       if (!token) {
-        token = 'demo-token-manager';
-        setAuthToken(token);
-        resolvedUser = getDemoUserForToken(token);
-        setCurrentUser(resolvedUser);
-        try {
-          const session = await api.loginSession({ demoRole: 'manager' });
-          if (!isMountedRef.current) return;
-          token = session.token;
-          setAuthToken(token);
-          resolvedUser = session.user;
-          setCurrentUser(resolvedUser);
-        } catch {
-          // Preserve resolved local demo user when backend is offline
+        if (isMountedRef.current) {
+          setCurrentUser(null);
+          setLoading(false);
+          setSyncing(false);
         }
-      } else {
-        resolvedUser = getDemoUserForToken(token);
+        return;
+      }
+
+      let resolvedUser = getDemoUserForToken(token)!;
+      setCurrentUser(resolvedUser);
+      try {
+        const me = await api.getMe();
+        if (!isMountedRef.current) return;
+        resolvedUser = me.user;
         setCurrentUser(resolvedUser);
-        try {
-          const me = await api.getMe();
-          if (!isMountedRef.current) return;
-          resolvedUser = me.user;
-          setCurrentUser(resolvedUser);
-        } catch {
-          // Preserve resolved local demo user for the active token when backend is offline
-          if (isMountedRef.current) {
-            setCurrentUser(resolvedUser);
-          }
-        }
+      } catch {
+        // Preserve resolved local demo user for the active token when backend is offline
       }
 
       if (!isMountedRef.current) return;
+
 
       if (resolvedUser.role === 'student') {
         const remoteMenus = await api.getMenus();
@@ -259,6 +307,47 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     setAuthToken(fallbackToken);
     if (isMountedRef.current) {
       setCurrentUser(getDemoUserForToken(fallbackToken));
+    }
+    // If switching back to operational roles and state.records is empty, restore from localStorage or seed
+    if (role !== 'student' && state.records.length === 0) {
+      try {
+        const stored = typeof window !== 'undefined' ? window.localStorage.getItem(STORAGE_KEY) : null;
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          if (parsed && Array.isArray(parsed.records) && parsed.records.length > 0) {
+            rawDispatch({
+              type: 'init',
+              data: {
+                settings: parsed.settings || state.settings,
+                menus: state.menus.length > 0 ? state.menus : parsed.menus,
+                records: parsed.records,
+              },
+            });
+          } else {
+            const seed = createSeedState();
+            rawDispatch({
+              type: 'init',
+              data: {
+                settings: state.settings,
+                menus: state.menus.length > 0 ? state.menus : seed.menus,
+                records: seed.records,
+              },
+            });
+          }
+        } else {
+          const seed = createSeedState();
+          rawDispatch({
+            type: 'init',
+            data: {
+              settings: state.settings,
+              menus: state.menus.length > 0 ? state.menus : seed.menus,
+              records: seed.records,
+            },
+          });
+        }
+      } catch {
+        // Ignore fallback errors
+      }
     }
     try {
       if (isMountedRef.current) setSyncing(true);
@@ -337,6 +426,18 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const logout = () => {
+    setAuthToken(null);
+    if (isMountedRef.current) {
+      setCurrentUser(null);
+    }
+    if (typeof window !== 'undefined') {
+      window.location.hash = '#/login';
+      window.dispatchEvent(new HashChangeEvent('hashchange'));
+    }
+  };
+
+
   const value = useMemo(
     () => ({
       state,
@@ -346,6 +447,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
       error,
       currentUser,
       switchRole,
+      logout,
       refreshData: loadData,
     }),
     [state, loading, syncing, error, currentUser],
@@ -353,6 +455,7 @@ export function AppStoreProvider({ children }: { children: ReactNode }) {
 
   return <StoreContext.Provider value={value}>{children}</StoreContext.Provider>;
 }
+
 
 export function useAppStore(): StoreValue {
   const ctx = useContext(StoreContext);

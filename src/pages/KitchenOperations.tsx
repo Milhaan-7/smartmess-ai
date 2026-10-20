@@ -35,7 +35,9 @@ export default function KitchenOperations() {
 
   const validDate = isValidDateString(date);
   const menu = validDate ? findMenu(menus, date, meal) : undefined;
-  const savedRecord = validDate ? records.find((r) => r.id === recordId(date, meal)) : undefined;
+  const savedRecord = validDate
+    ? records.find((r) => r.id === recordId(date, meal) || (r.date === date && r.meal === meal))
+    : undefined;
   const record = useMemo(() => {
     if (savedRecord) return savedRecord;
     if (menu && currentUser?.role === 'kitchen_staff') {
