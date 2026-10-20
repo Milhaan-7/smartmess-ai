@@ -331,6 +331,43 @@ export function PlanEditor({ record, onSave }: PlanEditorProps) {
         />
       </div>
 
+      {/* Visual Operational Flow Pipeline */}
+      <div className="rounded-xl border border-slate-200/90 bg-white p-3.5 shadow-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-2">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-brand-700 text-[10px] font-bold text-white">1</span>
+            <span className="font-semibold text-slate-800">Forecast Calculated</span>
+            <span className="text-slate-300">→</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className={cx(
+              'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
+              isRecommended ? 'bg-amber-600 text-white ring-2 ring-amber-100' : 'bg-brand-700 text-white'
+            )}>2</span>
+            <span className={cx('font-semibold', isRecommended ? 'text-amber-800' : 'text-slate-800')}>Manager Authorization</span>
+            <span className="text-slate-300">→</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className={cx(
+              'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
+              record.status === 'approved' ? 'bg-brand-700 text-white ring-2 ring-brand-100' : record.status === 'completed' ? 'bg-brand-700 text-white' : 'bg-slate-200 text-slate-600'
+            )}>3</span>
+            <span className={cx('font-semibold', record.status === 'approved' ? 'text-brand-800' : 'text-slate-700')}>Batch Preparation</span>
+            <span className="text-slate-300">→</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className={cx(
+              'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
+              record.status === 'completed' ? 'bg-brand-700 text-white' : 'bg-slate-200 text-slate-600'
+            )}>4</span>
+            <span className={cx('font-semibold', record.status === 'completed' ? 'text-brand-800' : 'text-slate-500')}>Residual Leftover Logging</span>
+          </div>
+        </div>
+      </div>
+
       <Card
         title={
           <span className="flex flex-wrap items-center gap-2">

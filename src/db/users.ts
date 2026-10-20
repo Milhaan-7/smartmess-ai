@@ -1,4 +1,4 @@
-import { db } from './index.ts';
+import { db, isConfigError } from './index.ts';
 import { users } from './schema.ts';
 import { eq } from 'drizzle-orm';
 
@@ -9,7 +9,11 @@ export async function getUserByUid(uid: string) {
     const rows = await db.select().from(users).where(eq(users.uid, uid));
     return rows[0] || null;
   } catch (error) {
-    console.error('Error fetching user by uid:', error);
+    if (isConfigError(error)) {
+      console.warn('[Users] Database unconfigured: skipping user lookup for', uid);
+    } else {
+      console.error('Error fetching user by uid:', error);
+    }
     throw new Error('Database query failed. Please try again later.', { cause: error });
   }
 }
@@ -52,7 +56,11 @@ export async function getOrCreateUser(
 
     return created;
   } catch (error) {
-    console.error('Error in getOrCreateUser:', error);
+    if (isConfigError(error)) {
+      console.warn('[Users] Database unconfigured in getOrCreateUser');
+    } else {
+      console.error('Error in getOrCreateUser:', error);
+    }
     throw new Error('Database user sync failed.', { cause: error });
   }
 }
@@ -66,7 +74,11 @@ export async function updateUserRole(uid: string, newRole: UserRole) {
       .returning();
     return updated;
   } catch (error) {
-    console.error('Error updating user role:', error);
+    if (isConfigError(error)) {
+      console.warn('[Users] Database unconfigured in updateUserRole');
+    } else {
+      console.error('Error updating user role:', error);
+    }
     throw new Error('Failed to update user role.', { cause: error });
   }
 }
@@ -75,7 +87,11 @@ export async function getUsers() {
   try {
     return await db.select().from(users);
   } catch (error) {
-    console.error('Database query failed:', error);
+    if (isConfigError(error)) {
+      console.warn('[Users] Database unconfigured in getUsers');
+    } else {
+      console.error('Database query failed:', error);
+    }
     throw new Error('Database query failed. Please try again later.', { cause: error });
   }
 }

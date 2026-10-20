@@ -66,9 +66,42 @@ export function reducer(state: AppState, action: AppAction): AppState {
     }
     case 'settings/update':
       return { ...state, settings: action.settings };
-    case 'reset':
+    case 'reset': {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          window.localStorage.removeItem(STORAGE_KEY);
+        } catch {
+          // Ignore storage errors
+        }
+      }
       return createSeedState();
+    }
   }
+}
+
+const STORAGE_KEY = 'smartmess_app_state_v1';
+
+export function getInitialState(): AppState {
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const stored = window.localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (
+          parsed &&
+          Array.isArray(parsed.menus) &&
+          parsed.menus.length > 0 &&
+          Array.isArray(parsed.records) &&
+          parsed.settings
+        ) {
+          return parsed;
+        }
+      }
+    } catch {
+      // Fallback to fresh seed state
+    }
+  }
+  return createSeedState();
 }
 
 export interface StoreValue {
@@ -110,12 +143,22 @@ export function getDemoUserForToken(token: string | null): CurrentUser {
 }
 
 export function AppStoreProvider({ children }: { children: ReactNode }) {
-  const [state, rawDispatch] = useReducer(reducer, undefined, createSeedState);
+  const [state, rawDispatch] = useReducer(reducer, undefined, getInitialState);
   const [loading, setLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(() => getDemoUserForToken(getAuthToken()));
   const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      } catch {
+        // Ignore quota/access errors
+      }
+    }
+  }, [state]);
 
   const loadData = async () => {
     try {

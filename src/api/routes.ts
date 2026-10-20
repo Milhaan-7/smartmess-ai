@@ -1,6 +1,6 @@
 import { Router, type Request, type Response } from 'express';
 import { eq, and, gte, lte, asc } from 'drizzle-orm';
-import { db, pool, DatabaseConfigurationError } from '../db/index.ts';
+import { db, pool, DatabaseConfigurationError, isConfigError } from '../db/index.ts';
 import { menus, menuItems, mealRecords, recordItems, messSettings } from '../db/schema.ts';
 import { getUsers, getUserByUid, updateUserRole, getOrCreateUser, UserRole } from '../db/users.ts';
 import { requireAuth, requireRole, type AuthRequest, DEMO_TOKENS } from '../middleware/auth.ts';
@@ -32,7 +32,11 @@ apiRouter.get('/health', async (req: Request, res: Response) => {
       client.release();
     }
   } catch (error: any) {
-    console.error('[Health] DB ping failed:', error?.message || 'Database unreachable');
+    if (error instanceof DatabaseConfigurationError) {
+      console.warn('[Health] Database unconfigured: running in demo fallback mode');
+    } else {
+      console.error('[Health] DB ping failed:', error?.message || 'Database unreachable');
+    }
     const safeErrorMessage =
       error instanceof DatabaseConfigurationError ? error.message : 'Database unreachable';
     res.status(503).json({
@@ -59,7 +63,11 @@ apiRouter.post('/auth/session', async (req: Request, res: Response) => {
       try {
         dbUser = await getUserByUid(targetUid);
       } catch (dbErr: any) {
-        console.error('[Auth Session] Database lookup failed:', dbErr?.message || 'Database error');
+        if (isConfigError(dbErr)) {
+          console.warn('[Auth Session] Database unconfigured during demo role exchange');
+        } else {
+          console.error('[Auth Session] Database lookup failed:', dbErr?.message || 'Database error');
+        }
         return res.status(503).json({
           error: 'Service Unavailable: Authentication database lookup failed.',
         });
@@ -97,7 +105,11 @@ apiRouter.post('/auth/session', async (req: Request, res: Response) => {
           },
         });
       } catch (dbErr: any) {
-        console.error('[Auth Session] Database user sync failed:', dbErr?.message || 'Database error');
+        if (isConfigError(dbErr)) {
+          console.warn('[Auth Session] Database unconfigured during user sync');
+        } else {
+          console.error('[Auth Session] Database user sync failed:', dbErr?.message || 'Database error');
+        }
         return res.status(503).json({
           error: 'Service Unavailable: Authentication database lookup failed.',
         });

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { adminAuth } from '../lib/firebase-admin.ts';
 import { getUserByUid, getOrCreateUser, UserRole } from '../db/users.ts';
+import { isConfigError } from '../db/index.ts';
 
 export interface AuthUser {
   uid: string;
@@ -48,7 +49,11 @@ export const requireAuth = async (
     try {
       dbUser = await getUserByUid(targetUid);
     } catch (error: any) {
-      console.error('[Auth] Database lookup failed during demo token verification:', error?.message || 'Database error');
+      if (isConfigError(error)) {
+        console.warn('[Auth] Database unconfigured during demo token verification');
+      } else {
+        console.error('[Auth] Database lookup failed during demo token verification:', error?.message || 'Database error');
+      }
       return res.status(503).json({
         error: 'Service Unavailable: Authentication database lookup failed.',
       });
@@ -93,7 +98,11 @@ export const requireAuth = async (
     req.dbUser = dbUser;
     return next();
   } catch (error: any) {
-    console.error('[Auth] Database user sync failed:', error?.message || 'Database error');
+    if (isConfigError(error)) {
+      console.warn('[Auth] Database unconfigured during user sync');
+    } else {
+      console.error('[Auth] Database user sync failed:', error?.message || 'Database error');
+    }
     return res.status(503).json({
       error: 'Service Unavailable: Authentication database lookup failed.',
     });

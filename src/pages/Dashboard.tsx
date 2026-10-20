@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ArrowRight, CalendarCheck, Clock, LineChart, Scale, Target, Users, Utensils } from 'lucide-react';
+import { ArrowRight, CalendarCheck, Coffee, LineChart, Scale, Target, Users, Utensils, UtensilsCrossed } from 'lucide-react';
 import { useAppStore } from '../store/AppStore';
 import { useToast } from '../components/common/Toast';
 import { DEMO_TODAY, MEAL_META, MEAL_OPTIONS, MEAL_ORDER } from '../lib/constants';
@@ -16,7 +16,7 @@ import { Card } from '../components/common/Card';
 import { ButtonLink } from '../components/common/Button';
 import { SegmentedControl } from '../components/common/SegmentedControl';
 import { EmptyState } from '../components/common/EmptyState';
-import { StatusBadge } from '../components/common/Badge';
+import { Badge, StatusBadge } from '../components/common/Badge';
 import { UpcomingMealsTable } from '../components/dashboard/UpcomingMealsTable';
 import { NextMealDecisionPanel } from '../components/dashboard/NextMealDecisionPanel';
 import { DemandTrendChart } from '../components/charts/DemandTrendChart';
@@ -90,45 +90,92 @@ export default function Dashboard() {
       <>
         <PageHeader
           title={`Today's Dining Service · ${formatWeekdayDay(DEMO_TODAY)}`}
-          description={`Welcome to ${settings.messName} at ${settings.institutionName}. Browse today's meals and service schedules.`}
+          description={`Welcome to ${settings.messName} at ${settings.institutionName}. Real-time published meal menus and dining hall schedules.`}
         />
 
-        <div className="grid gap-4 md:grid-cols-3">
+        {/* Informational Dining Hall Briefing */}
+        <div className="mb-6 rounded-xl border border-slate-200/90 bg-white p-4.5 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-700 ring-1 ring-brand-700/10">
+                <UtensilsCrossed size={18} aria-hidden />
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-900">{settings.messName} · Student Dining</p>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Service Schedules: <span className="font-medium text-slate-700">Breakfast 07:30–09:30</span> · <span className="font-medium text-slate-700">Lunch 12:30–14:30</span> · <span className="font-medium text-slate-700">Dinner 19:30–21:30</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs text-slate-500">
+              <span className="h-1.5 w-1.5 rounded-full bg-brand-600" aria-hidden />
+              <span>Portions prepared fresh daily using predictive demand modeling</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-3">
           {todayMeals.map(({ meal, menu }) => {
             const meta = MEAL_META[meal];
+            const hasItems = menu && menu.items.length > 0;
+            const MealIcon = meal === 'breakfast' ? Coffee : meal === 'lunch' ? Utensils : UtensilsCrossed;
+
             return (
-              <Card
+              <div
                 key={meal}
-                title={meta.label}
-                description={`Service: ${meta.time}`}
+                className="flex flex-col rounded-xl border border-slate-200/90 bg-white shadow-xs transition-shadow hover:shadow-sm"
               >
-                {menu && menu.items.length > 0 ? (
-                  <div className="space-y-2.5">
-                    <p className="text-xs font-medium uppercase tracking-wider text-gray-400">On the Menu</p>
-                    <ul className="divide-y divide-gray-100 text-sm">
-                      {menu.items.map((item) => (
-                        <li key={item.id} className="flex items-center justify-between py-2">
-                          <span className="font-medium text-gray-900">{item.name}</span>
-                          <span className="text-xs text-gray-500 tabular-nums">
-                            {item.kgPerPortion < 0.1 ? `${Math.round(item.kgPerPortion * 1000)}g` : `${item.kgPerPortion} kg`}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
+                <div className="flex items-center justify-between border-b border-slate-100 p-4.5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-50 text-brand-700">
+                      <MealIcon size={16} aria-hidden />
+                    </span>
+                    <div>
+                      <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">{meta.label}</h2>
+                      <p className="text-xs text-slate-500">{meta.time}</p>
+                    </div>
                   </div>
-                ) : (
-                  <EmptyState
-                    icon={Utensils}
-                    title="No menu published"
-                    description="The kitchen has not yet posted the items for this meal."
-                  />
-                )}
-              </Card>
+                  {hasItems ? (
+                    <Badge tone="brand">
+                      {menu.items.length} {menu.items.length === 1 ? 'Dish' : 'Dishes'}
+                    </Badge>
+                  ) : (
+                    <Badge tone="neutral">Unscheduled</Badge>
+                  )}
+                </div>
+
+                <div className="flex-1 p-4.5">
+                  {hasItems ? (
+                    <div className="space-y-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Published Dishes</p>
+                      <ul className="divide-y divide-slate-100 text-sm">
+                        {menu.items.map((item) => (
+                          <li key={item.id} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                            <span className="font-medium text-slate-900">{item.name}</span>
+                            <span className="text-xs text-slate-500 font-mono tabular-nums">
+                              {item.kgPerPortion < 0.1 ? `${Math.round(item.kgPerPortion * 1000)}g` : `${item.kgPerPortion} kg`} / portion
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : (
+                    <EmptyState
+                      icon={Utensils}
+                      title="No menu published"
+                      description="The kitchen has not yet posted the items for this meal service."
+                    />
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex items-center justify-between border-t border-slate-200/80 pt-4">
+          <p className="text-xs text-slate-500">
+            Menus are managed and published by institutional culinary staff.
+          </p>
           <ButtonLink variant="secondary" href={hrefFor('menus')}>
             View Full Weekly Menu Calendar <ArrowRight size={14} aria-hidden />
           </ButtonLink>
@@ -214,33 +261,40 @@ export default function Dashboard() {
           <div className="divide-y divide-gray-100">
             {todayMeals.map(({ meal, menu, record, status }) => {
               const meta = MEAL_META[meal];
+              const MealIcon = meal === 'breakfast' ? Coffee : meal === 'lunch' ? Utensils : UtensilsCrossed;
               return (
-                <div key={meal} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+                <div key={meal} className="flex flex-wrap items-center justify-between gap-3 py-3.5 first:pt-0 last:pb-0">
                   <div className="flex items-center gap-3">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 text-gray-700">
-                      <Clock size={16} />
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-slate-700 ring-1 ring-slate-200/60">
+                      <MealIcon size={17} aria-hidden />
                     </span>
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">{meta.label}</span>
+                        <span className="font-semibold text-slate-900">{meta.label}</span>
                         <StatusBadge status={status} />
                       </div>
-                      <p className="text-xs text-gray-500">
-                        {meta.time} · {menu ? `${menu.items.length} items configured` : 'No menu entered'}
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {meta.time} · {menu ? (
+                          <span>
+                            <strong className="font-medium text-slate-700">{menu.items.length} dishes</strong> ({menu.items.map((i) => i.name).slice(0, 3).join(', ')}{menu.items.length > 3 ? '…' : ''})
+                          </span>
+                        ) : (
+                          'No menu entered'
+                        )}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4 text-xs">
                     <div className="text-right">
-                      <span className="block font-semibold text-gray-900 tabular-nums">
+                      <span className="block font-semibold font-mono text-slate-900 tabular-nums">
                         {record?.actualDiners !== null && record?.actualDiners !== undefined
                           ? `${fmtInt(record.actualDiners)} actual diners`
                           : record?.predictedDiners
                             ? `${fmtInt(record.predictedDiners)} forecast diners`
                             : '—'}
                       </span>
-                      <span className="text-gray-500">
+                      <span className="text-slate-500">
                         {record?.status === 'completed'
                           ? 'Service completed'
                           : record?.status === 'approved'
@@ -251,10 +305,10 @@ export default function Dashboard() {
 
                     <ButtonLink
                       size="sm"
-                      variant="secondary"
+                      variant={record?.status === 'recommended' && isManager ? 'primary' : 'secondary'}
                       href={hrefFor('operations', { date: DEMO_TODAY, meal })}
                     >
-                      {isKitchenStaff ? 'Log Servings' : 'Open'}
+                      {isKitchenStaff ? 'Log Servings' : record?.status === 'recommended' ? 'Approve Plan' : 'Open'}
                     </ButtonLink>
                   </div>
                 </div>

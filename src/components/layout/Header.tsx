@@ -150,7 +150,7 @@ export function Header({ page, onMenu }: { page: PageId; onMenu: () => void }) {
                 </Badge>
               </div>
               <p className="text-xs text-gray-500">{currentUser?.email || 'manager@smartmess.internal'}</p>
-              <p className="mt-1 text-[11px] text-brand-700 font-medium">✓ Server-Verified PostgreSQL Role</p>
+              <p className="mt-1 text-[11px] text-brand-700 font-medium">✓ Role-Based Access Enforced</p>
             </div>
 
             <div className="space-y-1">
