@@ -14,8 +14,9 @@ export async function seedDatabaseIfEmpty(): Promise<boolean> {
     return false;
   }
 
-  const existingInst = await db.select().from(institutions).where(eq(institutions.id, DEFAULT_INSTITUTION_ID));
-  const existingRecords = await db.select().from(mealRecords);
+  try {
+    const existingInst = await db.select().from(institutions).where(eq(institutions.id, DEFAULT_INSTITUTION_ID));
+    const existingRecords = await db.select().from(mealRecords);
 
   // Seed default demonstration users if not present
   const defaultUsers = [
@@ -166,6 +167,10 @@ export async function seedDatabaseIfEmpty(): Promise<boolean> {
     }
   }
 
-  console.log('[Seed] Database initialization complete.');
-  return true;
+    console.log('[Seed] Database initialization complete.');
+    return true;
+  } catch (err: any) {
+    console.warn('[Seed] Database seed deferred or unconfigured:', err?.message || err);
+    return false;
+  }
 }

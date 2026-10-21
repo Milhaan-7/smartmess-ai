@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ShieldCheck, ChefHat, GraduationCap, ArrowRight, Sparkles, Building2, Utensils, CheckCircle2, Lock, TrendingUp, BarChart3, Clock } from 'lucide-react';
+import { ShieldCheck, ChefHat, GraduationCap, ArrowRight, Leaf, Building2 } from 'lucide-react';
 import { useAppStore, type UserRole } from '../store/AppStore';
 import { hrefFor } from '../lib/router';
 
@@ -16,272 +16,192 @@ export default function Login() {
         window.dispatchEvent(new HashChangeEvent('hashchange'));
       }
     } catch (err) {
-      console.error('Failed demo sign in:', err);
+      console.error('Failed synthetic demo sign in:', err);
     } finally {
       setLoadingRole(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0f1d] text-slate-100 flex flex-col justify-between selection:bg-brand-500 selection:text-white">
-      {/* Background Glow Gradients */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute -top-48 -left-48 h-[30rem] w-[30rem] rounded-full bg-brand-600/15 blur-[120px]" />
-        <div className="absolute top-1/4 -right-48 h-[30rem] w-[30rem] rounded-full bg-emerald-600/15 blur-[120px]" />
-        <div className="absolute -bottom-48 left-1/3 h-[30rem] w-[30rem] rounded-full bg-cyan-600/10 blur-[120px]" />
+    <div className="min-h-screen w-full flex flex-col lg:grid lg:grid-cols-12 bg-[#0B132B] text-slate-100 selection:bg-emerald-500 selection:text-white overflow-x-hidden font-sans">
+      {/* LEFT SIDE — Editorial Brand & Storytelling Panel (~54% width / lg:col-span-7) */}
+      <div className="relative lg:col-span-7 flex flex-col justify-between p-8 sm:p-12 lg:p-16 overflow-hidden min-h-[45vh] lg:min-h-screen">
+        {/* Background Dining Hall Photograph */}
+        <div 
+          className="absolute inset-0 z-0 bg-cover bg-center filter brightness-75 contrast-105"
+          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=1600&q=80')` }}
+        />
+        {/* Restrained Natural Darkening Overlay */}
+        <div className="absolute inset-0 z-10 bg-gradient-to-t from-[#0B132B] via-[#0B132B]/75 to-[#0B132B]/40" />
+
+        {/* Top Header Wordmark */}
+        <div className="relative z-20 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm">
+              <Leaf size={18} aria-hidden />
+            </span>
+            <span className="text-lg font-semibold tracking-tight text-white">
+              SmartMess <span className="text-emerald-400">AI</span>
+            </span>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-300 bg-slate-900/60 px-3 py-1.5 rounded-md border border-slate-700/60 backdrop-blur-sm">
+            <Building2 size={13} className="text-emerald-400" />
+            <span>St. Jude Campus Dining Hall #4</span>
+          </div>
+        </div>
+
+        {/* Center Editorial Content */}
+        <div className="relative z-20 my-auto py-10 max-w-xl">
+          <div className="text-xs font-semibold tracking-widest text-emerald-400 uppercase mb-3">
+            DINING OPERATIONS INTELLIGENCE
+          </div>
+          
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold tracking-tight text-white leading-tight mb-4">
+            Plan better. Prepare smarter. Waste less.
+          </h1>
+
+          <p className="text-sm sm:text-base text-slate-300 leading-relaxed mb-8">
+            One workspace for meal demand forecasting, kitchen preparation, and food-waste monitoring.
+          </p>
+
+          {/* Three Compact Capabilities Row */}
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pt-6 border-t border-slate-700/60 text-xs font-medium text-slate-300">
+            <span className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Demand forecasting
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Preparation planning
+            </span>
+            <span className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Waste monitoring
+            </span>
+          </div>
+        </div>
+
+        {/* Bottom Honest Metadata */}
+        <div className="relative z-20 flex items-center justify-between text-xs text-slate-400 pt-6 border-t border-slate-800">
+          <span>Interactive Hackathon Demo</span>
+          <span>Synthetic Baseline Dataset</span>
+        </div>
       </div>
 
-      {/* Header Bar */}
-      <header className="relative z-10 flex items-center justify-between px-6 py-6 max-w-7xl w-full mx-auto">
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-brand-500 to-emerald-700 text-white font-bold text-xl shadow-xl shadow-brand-600/30 ring-1 ring-white/20">
-            S
-          </span>
-          <div>
-            <h1 className="text-xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
-              SmartMess AI
-              <span className="inline-flex items-center gap-1 rounded-full bg-brand-500/15 px-2.5 py-0.5 text-xs font-semibold text-brand-400 ring-1 ring-brand-500/30">
-                <Sparkles size={11} /> AI-Powered
-              </span>
-            </h1>
-            <p className="text-xs font-medium text-slate-400">AI-powered institutional dining intelligence</p>
-          </div>
-        </div>
-
-        <div className="hidden md:flex items-center gap-2 text-xs font-medium text-slate-300 bg-slate-900/90 px-3.5 py-2 rounded-full border border-slate-800 shadow-inner backdrop-blur">
-          <Building2 size={14} className="text-brand-400" />
-          <span>St. Jude Campus Dining Hall #4</span>
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <main className="relative z-10 max-w-6xl w-full mx-auto px-6 py-10 flex-1 flex flex-col justify-center">
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 rounded-full bg-slate-800/80 px-3.5 py-1.5 text-xs font-medium text-emerald-300 border border-slate-700/80 mb-5 shadow-xs">
-            <Lock size={13} className="text-emerald-400" /> Demo Sign-In (Synthetic Role Profiles & Persistence Active)
-          </div>
-          <h2 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl leading-tight">
-            Transforming Institutional Kitchens Through <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-brand-400">Smart Demand Forecasting</span> & Waste Prevention
-          </h2>
-          <p className="mt-4 text-base text-slate-300 leading-relaxed max-w-2xl mx-auto">
-            Eliminate over-preparation and reduce organic dining hall waste with transparent deterministic forecasting, automated kitchen preparation targets, and real-time approval workflows.
-          </p>
-        </div>
-
-        {/* Product Preview Bar */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-12 max-w-4xl mx-auto w-full">
-          <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-4 backdrop-blur flex items-center gap-3.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500/10 text-brand-400 ring-1 ring-brand-500/20 shrink-0">
-              <TrendingUp size={20} />
+      {/* RIGHT SIDE — Primary Interaction / Demo Entry Area (~46% width / lg:col-span-5) */}
+      <div className="relative lg:col-span-5 flex flex-col justify-center px-6 sm:px-12 lg:px-16 py-12 bg-[#0D1B2A] lg:bg-[#0D1B2A] border-t lg:border-t-0 lg:border-l border-slate-800/80 z-20">
+        <div className="max-w-md w-full mx-auto">
+          {/* Header */}
+          <div className="mb-8">
+            <div className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider mb-2">
+              Synthetic Demo Entry
             </div>
-            <div>
-              <div className="text-sm font-bold text-white">Demand Forecasting</div>
-              <div className="text-xs text-slate-400">Time-aware trend & menu factors</div>
-            </div>
+            <h2 className="text-2xl font-bold tracking-tight text-white mb-1.5">
+              Welcome to SmartMess AI
+            </h2>
+            <p className="text-sm text-slate-400">
+              Select a demo role persona to launch the workspace.
+            </p>
           </div>
 
-          <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-4 backdrop-blur flex items-center gap-3.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20 shrink-0">
-              <Sparkles size={20} />
-            </div>
-            <div>
-              <div className="text-sm font-bold text-white">AI Assistant & Insights</div>
-              <div className="text-xs text-slate-400">Conversational operational intelligence</div>
-            </div>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800/90 bg-slate-900/60 p-4 backdrop-blur flex items-center gap-3.5">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20 shrink-0">
-              <BarChart3 size={20} />
-            </div>
-            <div>
-              <div className="text-sm font-bold text-white">Waste Reduction Analytics</div>
-              <div className="text-xs text-slate-400">Track MAE, WAPE & residual leftovers</div>
-            </div>
-          </div>
-        </div>
-
-        {/* Persona Selection Header */}
-        <div className="text-center mb-6">
-          <h2 className="text-xl font-bold text-white mb-1">Select Your Dining Hall Persona</h2>
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Select Role Persona to Enter Live Demo</h3>
-        </div>
-
-        {/* Role Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto w-full">
-          {/* Manager Role Card */}
-          <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/80 p-6 backdrop-blur transition-all duration-300 hover:border-brand-500/60 hover:bg-slate-900 hover:shadow-2xl hover:shadow-brand-950/50">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-500/10 text-brand-400 ring-1 ring-brand-500/20 group-hover:scale-110 transition-transform">
-                  <ShieldCheck size={24} />
-                </span>
-                <span className="rounded-full bg-brand-500/15 px-3 py-1 text-[11px] font-bold text-brand-300 ring-1 ring-brand-500/30">
-                  Full Administrative
-                </span>
-              </div>
-              <h4 className="text-lg font-bold text-white mb-1">Mess Manager</h4>
-              <p className="text-xs text-slate-400 mb-5 leading-relaxed">
-                Complete authority over demand forecasting, menu planning, prep plan approvals, and waste analytics.
-              </p>
-
-              <ul className="space-y-2.5 mb-6 text-xs text-slate-300">
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={14} className="text-brand-400 shrink-0" />
-                  <span>Review & approve daily meal preparation plans</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={14} className="text-brand-400 shrink-0" />
-                  <span>Inspect WAPE & MAE waste analytics</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={14} className="text-brand-400 shrink-0" />
-                  <span>Use AI Assistant for operational queries</span>
-                </li>
-              </ul>
-            </div>
-
+          {/* Compact Selectable Role Rows */}
+          <div className="space-y-3">
+            {/* 1. Mess Manager */}
             <button
               type="button"
               onClick={() => handleSignIn('manager')}
               disabled={loadingRole !== null}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand-600 px-4 py-3 text-xs font-bold text-white shadow-lg shadow-brand-600/30 hover:bg-brand-500 active:bg-brand-700 disabled:opacity-50 transition-all group-hover:shadow-brand-500/20"
+              className="w-full text-left group relative flex items-center justify-between p-4 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-emerald-500/50 active:scale-[0.99] transition-all focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              aria-label="Launch Demo as Mess Manager"
             >
-              {loadingRole === 'manager' ? (
-                <span>Signing in...</span>
-              ) : (
-                <>
-                  <span>Sign In as Manager</span>
-                  <ArrowRight size={14} />
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Kitchen Staff Role Card */}
-          <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/80 p-6 backdrop-blur transition-all duration-300 hover:border-amber-500/60 hover:bg-slate-900 hover:shadow-2xl hover:shadow-amber-950/50">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20 group-hover:scale-110 transition-transform">
-                  <ChefHat size={24} />
+              <div className="flex items-start gap-3.5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20 group-hover:bg-emerald-500/20 transition-colors">
+                  <ShieldCheck size={20} />
                 </span>
-                <span className="rounded-full bg-amber-500/15 px-3 py-1 text-[11px] font-bold text-amber-300 ring-1 ring-amber-500/30">
-                  Culinary Operations
-                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-white">Mess Manager</h3>
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400">Full Access + AI</span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                    Forecasts, menu approvals and waste analytics.
+                  </p>
+                </div>
               </div>
-              <h4 className="text-lg font-bold text-white mb-1">Kitchen Staff</h4>
-              <p className="text-xs text-slate-400 mb-5 leading-relaxed">
-                Executes manager-approved batch prep targets on the line and logs actual servings and residual leftovers.
-              </p>
+              <div className="text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-0.5 transition-all pl-3">
+                <ArrowRight size={16} />
+              </div>
+            </button>
 
-              <ul className="space-y-2.5 mb-6 text-xs text-slate-300">
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={14} className="text-amber-400 shrink-0" />
-                  <span>View authorized batch preparation targets</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={14} className="text-amber-400 shrink-0" />
-                  <span>Log actual prepared & consumed quantities</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={14} className="text-amber-400 shrink-0" />
-                  <span>Record end-of-service residual waste logs</span>
-                </li>
-              </ul>
-            </div>
-
+            {/* 2. Kitchen Staff */}
             <button
               type="button"
               onClick={() => handleSignIn('kitchen_staff')}
               disabled={loadingRole !== null}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-amber-600 px-4 py-3 text-xs font-bold text-white shadow-lg shadow-amber-600/30 hover:bg-amber-500 active:bg-amber-700 disabled:opacity-50 transition-all group-hover:shadow-amber-500/20"
+              className="w-full text-left group relative flex items-center justify-between p-4 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-amber-500/50 active:scale-[0.99] transition-all focus:outline-none focus:ring-2 focus:ring-amber-500"
+              aria-label="Launch Demo as Kitchen Staff"
             >
-              {loadingRole === 'kitchen_staff' ? (
-                <span>Signing in...</span>
-              ) : (
-                <>
-                  <span>Sign In as Kitchen Staff</span>
-                  <ArrowRight size={14} />
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Student Role Card */}
-          <div className="group relative flex flex-col justify-between rounded-2xl border border-slate-800 bg-slate-900/80 p-6 backdrop-blur transition-all duration-300 hover:border-emerald-500/60 hover:bg-slate-900 hover:shadow-2xl hover:shadow-emerald-950/50">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 ring-1 ring-emerald-500/20 group-hover:scale-110 transition-transform">
-                  <GraduationCap size={24} />
+              <div className="flex items-start gap-3.5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 ring-1 ring-amber-500/20 group-hover:bg-amber-500/20 transition-colors">
+                  <ChefHat size={20} />
                 </span>
-                <span className="rounded-full bg-emerald-500/15 px-3 py-1 text-[11px] font-bold text-emerald-300 ring-1 ring-emerald-500/30">
-                  Diner Visibility
-                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-white">Kitchen Staff</h3>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                    Preparation targets and serving records.
+                  </p>
+                </div>
               </div>
-              <h4 className="text-lg font-bold text-white mb-1">Student / Diner</h4>
-              <p className="text-xs text-slate-400 mb-5 leading-relaxed">
-                Browses published daily menus, portion sizes, service hours, and receives instant approval notification alerts.
-              </p>
+              <div className="text-slate-500 group-hover:text-amber-400 group-hover:translate-x-0.5 transition-all pl-3">
+                <ArrowRight size={16} />
+              </div>
+            </button>
 
-              <ul className="space-y-2.5 mb-6 text-xs text-slate-300">
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
-                  <span>View today's published breakfast, lunch & dinner</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
-                  <span>Receive menu approval notification alerts</span>
-                </li>
-                <li className="flex items-center gap-2.5">
-                  <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />
-                  <span>Ask AI Assistant about menu items & timings</span>
-                </li>
-              </ul>
-            </div>
-
+            {/* 3. Student / Diner */}
             <button
               type="button"
               onClick={() => handleSignIn('student')}
               disabled={loadingRole !== null}
-              className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-xs font-bold text-white shadow-lg shadow-emerald-600/30 hover:bg-emerald-500 active:bg-emerald-700 disabled:opacity-50 transition-all group-hover:shadow-emerald-500/20"
+              className="w-full text-left group relative flex items-center justify-between p-4 rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-900 hover:border-cyan-500/50 active:scale-[0.99] transition-all focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              aria-label="Launch Demo as Student / Diner"
             >
-              {loadingRole === 'student' ? (
-                <span>Signing in...</span>
-              ) : (
-                <>
-                  <span>Sign In as Student</span>
-                  <ArrowRight size={14} />
-                </>
-              )}
+              <div className="flex items-start gap-3.5">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-500/10 text-cyan-400 ring-1 ring-cyan-500/20 group-hover:bg-cyan-500/20 transition-colors">
+                  <GraduationCap size={20} />
+                </span>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold text-white">Student / Diner</h3>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5 leading-relaxed">
+                    Approved menus and dining notifications.
+                  </p>
+                </div>
+              </div>
+              <div className="text-slate-500 group-hover:text-cyan-400 group-hover:translate-x-0.5 transition-all pl-3">
+                <ArrowRight size={16} />
+              </div>
             </button>
           </div>
-        </div>
 
-        {/* Technical Notice Banner */}
-        <div className="mt-12 rounded-2xl border border-slate-800 bg-slate-900/40 p-4 text-center backdrop-blur max-w-3xl mx-auto w-full">
-          <div className="flex flex-wrap items-center justify-center gap-6 text-xs text-slate-400 font-medium">
-            <span className="flex items-center gap-2">
-              <Utensils size={14} className="text-brand-400" />
-              <span>Synthetic Baseline Dataset Loaded</span>
-            </span>
-            <span className="hidden sm:inline text-slate-700">•</span>
-            <span className="flex items-center gap-2">
-              <Clock size={14} className="text-emerald-400" />
-              <span>Browser LocalStorage Persistence</span>
-            </span>
-            <span className="hidden sm:inline text-slate-700">•</span>
-            <span className="flex items-center gap-2">
-              <Sparkles size={14} className="text-amber-400" />
-              <span>Gemini AI Assistant Enabled</span>
-            </span>
+          {/* Loading status indicator */}
+          {loadingRole && (
+            <div className="mt-4 text-center text-xs text-emerald-400 font-medium animate-pulse">
+              Launching synthetic demo for {loadingRole.replace('_', ' ')}...
+            </div>
+          )}
+
+          {/* Footer Disclosure */}
+          <div className="mt-10 pt-6 border-t border-slate-800/80 text-center">
+            <p className="text-xs text-slate-500">
+              Demo environment · Synthetic data session stored locally
+            </p>
           </div>
         </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="relative z-10 py-5 px-6 text-center text-xs text-slate-500 border-t border-slate-800/80">
-        SmartMess AI — Institutional Kitchen Demand Forecasting & Food Waste Prevention Demo.
-      </footer>
+      </div>
     </div>
   );
 }
