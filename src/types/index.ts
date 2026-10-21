@@ -3,7 +3,7 @@ export type MealType = 'breakfast' | 'lunch' | 'dinner';
 export type PlanStatus = 'recommended' | 'approved' | 'completed';
 export type DisplayStatus = PlanStatus | 'not_planned';
 export type SpecialDay = 'normal' | 'exam_week' | 'campus_event' | 'festival_holiday';
-export type PageId = 'dashboard' | 'forecasts' | 'menus' | 'operations' | 'waste' | 'settings' | 'login';
+export type PageId = 'dashboard' | 'forecasts' | 'menus' | 'operations' | 'waste' | 'settings' | 'ai-assistant' | 'login';
 
 
 export interface MenuItem {

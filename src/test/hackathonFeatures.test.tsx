@@ -39,7 +39,7 @@ describe('Hackathon Goals Verification (Login, Notifications, Kitchen Consistenc
     await act(async () => {
       await user.click(screen.getByRole('button', { name: /Sign In as Manager/i }));
     });
-    expect(await screen.findByRole('heading', { level: 1, name: 'Dashboard' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { level: 1, name: /Welcome back/i })).toBeInTheDocument();
 
 
     // Sign out

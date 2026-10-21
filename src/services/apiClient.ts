@@ -59,10 +59,19 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     headers,
   });
 
+  const contentType = res.headers.get('content-type') || '';
   if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({}));
-    const message = errorBody.error || `HTTP ${res.status}: ${res.statusText}`;
+    let message = `HTTP ${res.status}: ${res.statusText}`;
+    if (contentType.includes('application/json')) {
+      const errorBody = await res.json().catch(() => ({}));
+      message = errorBody.error || message;
+    }
     throw new Error(message);
+  }
+
+  if (!contentType.includes('application/json')) {
+    const text = await res.text();
+    throw new Error(`Expected JSON response but received ${contentType || 'non-JSON'} (${res.status}): ${text.slice(0, 80)}`);
   }
 
   return res.json() as Promise<T>;
@@ -177,5 +186,10 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-};
 
+  sendChatMessage: (message: string, history?: Array<{ role: string; content: string }>) =>
+    request<{ reply: string; model: string; timestamp: string }>('/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, history }),
+    }),
+};

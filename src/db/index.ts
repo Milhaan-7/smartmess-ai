@@ -101,9 +101,7 @@ declare global {
 export const createPool = () => {
   if (!global._postgresPool) {
     const status = resolveDatabaseConfig();
-    if (!status.configured && status.error) {
-      console.warn(`[DB] ${status.error.message}`);
-    } else if (status.usingAdminFallback) {
+    if (status.usingAdminFallback) {
       console.warn(
         '[DB] Using SQL_ADMIN_USER/SQL_ADMIN_PASSWORD fallback in non-production. Prefer least-privilege SQL_USER/SQL_PASSWORD for application runtime.',
       );

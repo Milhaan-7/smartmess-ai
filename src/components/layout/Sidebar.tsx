@@ -1,4 +1,4 @@
-import { BarChart3, ChefHat, CalendarDays, LayoutDashboard, Leaf, Settings as SettingsIcon, TrendingUp, X, type LucideIcon } from 'lucide-react';
+import { BarChart3, ChefHat, CalendarDays, LayoutDashboard, Leaf, Settings as SettingsIcon, Sparkles, TrendingUp, X, type LucideIcon } from 'lucide-react';
 import type { PageId } from '../../types';
 import { hrefFor } from '../../lib/router';
 import { cx } from '../../lib/cx';
@@ -7,6 +7,7 @@ import { useAppStore, type UserRole } from '../../store/AppStore';
 export const NAV_ITEMS: { id: PageId; label: string; icon: LucideIcon }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'forecasts', label: 'Forecasts', icon: TrendingUp },
+  { id: 'ai-assistant', label: 'AI Assistant', icon: Sparkles },
   { id: 'menus', label: 'Menus', icon: CalendarDays },
   { id: 'operations', label: 'Kitchen Operations', icon: ChefHat },
   { id: 'waste', label: 'Waste Analytics', icon: BarChart3 },
@@ -27,7 +28,7 @@ export function getNavItemsForRole(role?: UserRole): { id: PageId; label: string
       { id: 'operations', label: 'Kitchen Operations', icon: ChefHat },
     ];
   }
-  // Manager has full access
+  // Manager has full access including AI Assistant
   return NAV_ITEMS;
 }
 

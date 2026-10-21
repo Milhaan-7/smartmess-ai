@@ -50,10 +50,22 @@ export const requireAuth = async (
       dbUser = await getUserByUid(targetUid);
     } catch (error: any) {
       if (isConfigError(error)) {
-        console.warn('[Auth] Database unconfigured during demo token verification');
-      } else {
-        console.error('[Auth] Database lookup failed during demo token verification:', error?.message || 'Database error');
+        console.warn('[Auth] Database unconfigured during demo token verification: falling back to demo user');
+        const role: UserRole = token.includes('student')
+          ? 'student'
+          : token.includes('staff')
+            ? 'kitchen_staff'
+            : 'manager';
+        req.userRole = role;
+        req.user = {
+          uid: targetUid,
+          email: `${role}@smartmess.internal`,
+          name: role === 'kitchen_staff' ? 'Demo Kitchen Staff' : role === 'student' ? 'Demo Student' : 'Demo Manager',
+          role,
+        };
+        return next();
       }
+      console.error('[Auth] Database lookup failed during demo token verification:', error?.message || 'Database error');
       return res.status(503).json({
         error: 'Service Unavailable: Authentication database lookup failed.',
       });

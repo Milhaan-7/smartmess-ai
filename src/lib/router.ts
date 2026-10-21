@@ -4,6 +4,7 @@ import type { PageId } from '../types';
 export const PAGE_PATHS: Record<PageId, string> = {
   dashboard: '/',
   forecasts: '/forecasts',
+  'ai-assistant': '/ai-assistant',
   menus: '/menus',
   operations: '/kitchen-operations',
   waste: '/waste-analytics',

@@ -6,6 +6,7 @@ import { AppStoreProvider } from './store/AppStore';
 import { ToastProvider } from './components/common/Toast';
 import Dashboard from './pages/Dashboard';
 import Forecasts from './pages/Forecasts';
+import AiAssistant from './pages/AiAssistant';
 import Menus from './pages/Menus';
 import KitchenOperations from './pages/KitchenOperations';
 import WasteAnalytics from './pages/WasteAnalytics';
@@ -15,6 +16,7 @@ import Login from './pages/Login';
 const PAGES: Record<PageId, ComponentType> = {
   dashboard: Dashboard,
   forecasts: Forecasts,
+  'ai-assistant': AiAssistant,
   menus: Menus,
   operations: KitchenOperations,
   waste: WasteAnalytics,
