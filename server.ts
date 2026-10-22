@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { apiRouter } from './src/api/routes';
 import { seedDatabaseIfEmpty } from './src/db/seed';
+import { resolveDatabaseConfig } from './src/db/index';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 3000;
@@ -19,7 +20,12 @@ async function startServer() {
 
   // Seed database with reproducible baseline dataset if tables are empty
   try {
-    await seedDatabaseIfEmpty();
+    const dbStatus = resolveDatabaseConfig();
+    if (dbStatus.configured) {
+      await seedDatabaseIfEmpty();
+    } else {
+      console.log('[Server] Database persistence unconfigured — operating in demo/in-memory mode.');
+    }
   } catch (err: any) {
     console.warn('[Server] Seed check deferred or non-fatal:', err?.message || 'Database unavailable');
   }

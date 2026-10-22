@@ -7,6 +7,7 @@ const sqlHost = process.env.SQL_HOST?.trim();
 const sqlDbName = process.env.SQL_DB_NAME?.trim();
 const user = process.env.SQL_ADMIN_USER?.trim() || process.env.SQL_USER?.trim();
 const password = process.env.SQL_ADMIN_PASSWORD || process.env.SQL_PASSWORD;
+const sqlPort = Number(process.env.SQL_PORT) || 5432;
 
 if (!sqlHost) {
   throw new Error('SQL_HOST must be set in environment variables.');
@@ -28,6 +29,7 @@ export default defineConfig({
   schemaFilter: ['public'],
   dbCredentials: {
     host: sqlHost,
+    port: sqlPort,
     user: user,
     password: password,
     database: sqlDbName,

@@ -13,12 +13,12 @@ interface CardProps {
 
 export function Card({ title, description, actions, children, className, flush }: CardProps) {
   return (
-    <section className={cx('rounded-xl border border-gray-200 bg-white shadow-sm', className)}>
+    <section className={cx('rounded-xl border border-slate-200/90 bg-white shadow-xs', className)}>
       {(title || actions) && (
-        <header className="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 px-5 py-4">
+        <header className="flex flex-wrap items-start justify-between gap-3 border-b border-slate-100 px-5 py-4">
           <div className="min-w-0">
-            {title && <h2 className="text-[15px] font-semibold text-gray-900">{title}</h2>}
-            {description && <p className="mt-0.5 text-[13px] text-gray-500">{description}</p>}
+            {title && <h2 className="text-[15px] font-semibold tracking-tight text-slate-900">{title}</h2>}
+            {description && <p className="mt-0.5 text-[13px] text-slate-500">{description}</p>}
           </div>
           {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
         </header>

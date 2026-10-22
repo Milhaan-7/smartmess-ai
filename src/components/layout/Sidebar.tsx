@@ -1,4 +1,4 @@
-import { BarChart3, ChefHat, CalendarDays, Database, LayoutDashboard, Leaf, Settings as SettingsIcon, TrendingUp, X, type LucideIcon } from 'lucide-react';
+import { BarChart3, ChefHat, CalendarDays, LayoutDashboard, Leaf, Settings as SettingsIcon, Sparkles, TrendingUp, X, type LucideIcon } from 'lucide-react';
 import type { PageId } from '../../types';
 import { hrefFor } from '../../lib/router';
 import { cx } from '../../lib/cx';
@@ -7,6 +7,7 @@ import { useAppStore, type UserRole } from '../../store/AppStore';
 export const NAV_ITEMS: { id: PageId; label: string; icon: LucideIcon }[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'forecasts', label: 'Forecasts', icon: TrendingUp },
+  { id: 'ai-assistant', label: 'AI Assistant', icon: Sparkles },
   { id: 'menus', label: 'Menus', icon: CalendarDays },
   { id: 'operations', label: 'Kitchen Operations', icon: ChefHat },
   { id: 'waste', label: 'Waste Analytics', icon: BarChart3 },
@@ -27,7 +28,7 @@ export function getNavItemsForRole(role?: UserRole): { id: PageId; label: string
       { id: 'operations', label: 'Kitchen Operations', icon: ChefHat },
     ];
   }
-  // Manager has full access
+  // Manager has full access including AI Assistant
   return NAV_ITEMS;
 }
 
@@ -80,14 +81,20 @@ export function Sidebar({ active, open, onClose }: { active: PageId; open: boole
           })}
         </nav>
 
-        <div className="border-t border-gray-100 p-3">
-          <div className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5 text-xs text-gray-600">
-            <div className="flex items-center gap-1.5 font-medium text-gray-900">
-              <Database size={13} className="text-brand-700 shrink-0" aria-hidden />
-              <span>Cloud SQL PostgreSQL</span>
+        <div className="border-t border-slate-100 p-3">
+          <div className="rounded-lg bg-slate-50 border border-slate-200/70 px-3 py-2.5 text-xs text-slate-600">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-slate-900 capitalize">
+                {currentUser?.role === 'kitchen_staff' ? 'Kitchen Staff' : currentUser?.role || 'Manager'}
+              </span>
+              <span className="text-[11px] font-medium text-brand-700">Active Role</span>
             </div>
-            <p className="mt-1 text-[11px] text-gray-500 leading-tight">
-              Persistent storage · Reproducible baseline forecasts
+            <p className="mt-1 text-[11px] text-slate-500 leading-tight">
+              {currentUser?.role === 'student'
+                ? 'Viewing published daily dining menus'
+                : currentUser?.role === 'kitchen_staff'
+                  ? 'Preparation schedules & leftover logging'
+                  : 'Full demand forecasting & approvals'}
             </p>
           </div>
         </div>

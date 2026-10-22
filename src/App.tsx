@@ -6,18 +6,22 @@ import { AppStoreProvider } from './store/AppStore';
 import { ToastProvider } from './components/common/Toast';
 import Dashboard from './pages/Dashboard';
 import Forecasts from './pages/Forecasts';
+import AiAssistant from './pages/AiAssistant';
 import Menus from './pages/Menus';
 import KitchenOperations from './pages/KitchenOperations';
 import WasteAnalytics from './pages/WasteAnalytics';
 import Settings from './pages/Settings';
+import Login from './pages/Login';
 
 const PAGES: Record<PageId, ComponentType> = {
   dashboard: Dashboard,
   forecasts: Forecasts,
+  'ai-assistant': AiAssistant,
   menus: Menus,
   operations: KitchenOperations,
   waste: WasteAnalytics,
   settings: Settings,
+  login: Login,
 };
 
 import { useAppStore } from './store/AppStore';
@@ -26,7 +30,12 @@ import { getNavItemsForRole } from './components/layout/Sidebar';
 function Routes() {
   const route = useRoute();
   const { currentUser } = useAppStore();
-  const role = currentUser?.role || 'manager';
+
+  if (!currentUser || route.page === 'login') {
+    return <Login />;
+  }
+
+  const role = currentUser.role;
   const allowedPages = getNavItemsForRole(role).map((item) => item.id);
   
   const isAllowed = allowedPages.includes(route.page);
@@ -40,6 +49,7 @@ function Routes() {
     </AppShell>
   );
 }
+
 
 export default function App() {
   return (

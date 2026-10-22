@@ -3,7 +3,7 @@ import express from 'express';
 import request from 'supertest';
 import { apiRouter } from '../api/routes.ts';
 import { seedDatabaseIfEmpty, DEFAULT_MESS_ID } from '../db/seed.ts';
-import { db } from '../db/index.ts';
+import { db, resolveDatabaseConfig } from '../db/index.ts';
 import { menus, menuItems, mealRecords } from '../db/schema.ts';
 import { eq } from 'drizzle-orm';
 
@@ -15,8 +15,11 @@ const MANAGER_AUTH = 'Bearer test-token-manager';
 const STAFF_AUTH = 'Bearer test-token-staff';
 const STUDENT_AUTH = 'Bearer test-token-student';
 
-describe('Backend API & Cloud SQL Database Integration (Phase 2)', () => {
+const isDbConfigured = resolveDatabaseConfig().configured;
+
+describe.skipIf(!isDbConfigured)('Backend API & Cloud SQL Database Integration (Phase 2)', () => {
   beforeAll(async () => {
+    if (!isDbConfigured) return;
     // Seed initial dataset if empty or missing records
     await seedDatabaseIfEmpty();
   });

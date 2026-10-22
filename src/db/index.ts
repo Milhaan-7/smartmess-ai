@@ -25,6 +25,26 @@ export interface DatabaseConfigStatus {
   error?: DatabaseConfigurationError;
 }
 
+export function isConfigError(error?: any): boolean {
+  const status = resolveDatabaseConfig();
+  if (!status.configured) return true;
+
+  let current = error;
+  while (current) {
+    if (
+      current instanceof DatabaseConfigurationError ||
+      current.name === 'DatabaseConfigurationError' ||
+      (typeof current.message === 'string' &&
+        (current.message.includes('Database configuration error') ||
+          current.message.includes('Missing required environment variables')))
+    ) {
+      return true;
+    }
+    current = current.cause;
+  }
+  return false;
+}
+
 export function resolveDatabaseConfig(env: NodeJS.ProcessEnv = process.env): DatabaseConfigStatus {
   const isProduction = env.NODE_ENV === 'production';
   const host = env.SQL_HOST?.trim();
@@ -53,7 +73,9 @@ export function resolveDatabaseConfig(env: NodeJS.ProcessEnv = process.env): Dat
     };
   }
 
-  const port = env.SQL_PORT ? Number(env.SQL_PORT) : undefined;
+  const rawPort = env.SQL_PORT?.trim();
+  const parsedPort = rawPort ? Number(rawPort) : 5432;
+  const port = !Number.isNaN(parsedPort) && parsedPort > 0 ? parsedPort : 5432;
 
   return {
     configured: true,
@@ -64,7 +86,7 @@ export function resolveDatabaseConfig(env: NodeJS.ProcessEnv = process.env): Dat
       user,
       password,
       database,
-      ...(port && !Number.isNaN(port) ? { port } : {}),
+      port,
       max: 10,
       connectionTimeoutMillis: 15000,
     },
@@ -79,9 +101,7 @@ declare global {
 export const createPool = () => {
   if (!global._postgresPool) {
     const status = resolveDatabaseConfig();
-    if (!status.configured && status.error) {
-      console.warn(`[DB] ${status.error.message}`);
-    } else if (status.usingAdminFallback) {
+    if (status.usingAdminFallback) {
       console.warn(
         '[DB] Using SQL_ADMIN_USER/SQL_ADMIN_PASSWORD fallback in non-production. Prefer least-privilege SQL_USER/SQL_PASSWORD for application runtime.',
       );

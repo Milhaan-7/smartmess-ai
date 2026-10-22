@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { db } from './index';
+import { db, resolveDatabaseConfig } from './index';
 import { institutions, messes, messSettings, menus, menuItems, mealRecords, recordItems } from './schema';
 import { createSeedState } from '../data/mockData';
 
@@ -9,8 +9,14 @@ export const DEFAULT_INSTITUTION_ID = 'inst-greenfield';
 export const DEFAULT_MESS_ID = 'mess-greenfield-north';
 
 export async function seedDatabaseIfEmpty(): Promise<boolean> {
-  const existingInst = await db.select().from(institutions).where(eq(institutions.id, DEFAULT_INSTITUTION_ID));
-  const existingRecords = await db.select().from(mealRecords);
+  const status = resolveDatabaseConfig();
+  if (!status.configured) {
+    return false;
+  }
+
+  try {
+    const existingInst = await db.select().from(institutions).where(eq(institutions.id, DEFAULT_INSTITUTION_ID));
+    const existingRecords = await db.select().from(mealRecords);
 
   // Seed default demonstration users if not present
   const defaultUsers = [
@@ -161,6 +167,10 @@ export async function seedDatabaseIfEmpty(): Promise<boolean> {
     }
   }
 
-  console.log('[Seed] Database initialization complete.');
-  return true;
+    console.log('[Seed] Database initialization complete.');
+    return true;
+  } catch (err: any) {
+    console.warn('[Seed] Database seed deferred or unconfigured:', err?.message || err);
+    return false;
+  }
 }

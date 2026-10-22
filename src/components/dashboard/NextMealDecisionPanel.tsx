@@ -35,9 +35,8 @@ export function NextMealDecisionPanel({
   }
 
   const mealMeta = MEAL_META[next.meal];
-  const isRecommended = next.record?.status === 'recommended';
-  const isApproved = next.record?.status === 'approved';
-  const isNotPlanned = next.status === 'not_planned';
+  const isApproved = next.record?.status === 'approved' || next.status === 'approved';
+  const isRecommended = (next.record?.status === 'recommended' || next.status === 'recommended' || next.status === 'not_planned') && !isApproved;
 
   // Calculate total kg of suggested food preparation from existing items and portion weights
   const totalSuggestedKg = preview?.items
@@ -48,116 +47,169 @@ export function NextMealDecisionPanel({
       }, 0)
     : 0;
 
+  const baselineDiners = next.record?.baselineDiners ?? null;
+  const dinerDiff = next.predictedDiners !== null && baselineDiners !== null ? next.predictedDiners - baselineDiners : null;
+  const diffPct = dinerDiff !== null && baselineDiners && baselineDiners > 0 ? (dinerDiff / baselineDiners) * 100 : null;
+
   return (
-    <div className="rounded-xl border border-brand-200/80 bg-gradient-to-r from-brand-50/70 via-white to-white p-5 shadow-xs">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 pb-3">
-        <div className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-700 text-white">
-            <Utensils size={15} aria-hidden />
+    <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs transition-shadow">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand-50 text-brand-700 ring-1 ring-brand-700/10">
+            <Utensils size={18} aria-hidden />
           </span>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold text-gray-900">
+            <div className="flex items-center gap-2.5">
+              <h2 className="text-base font-semibold tracking-tight text-slate-900">
                 Next Service Decision: {mealMeta.label}
               </h2>
               <StatusBadge status={next.status} />
             </div>
-            <p className="text-xs text-gray-500">
-              {formatWeekdayDay(next.date)} · Typical service: {mealMeta.time} · {formatMedium(next.date)}
+            <p className="mt-0.5 text-xs text-slate-500">
+              {formatWeekdayDay(next.date)} · Service window: {mealMeta.time} · {formatMedium(next.date)}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 text-xs text-gray-500">
-          <Clock size={14} className="text-gray-400" />
-          <span>Planning Date: {formatMedium(next.date)}</span>
+        <div className="flex items-center gap-2 text-xs font-medium text-slate-500">
+          <Clock size={14} className="text-slate-400" />
+          <span>Planning horizon: {formatMedium(next.date)}</span>
+        </div>
+      </div>
+
+      {/* Prominent Next Action Guidance */}
+      <div className={`mt-4 rounded-xl border p-4 ${
+        isRecommended
+          ? 'border-amber-200/80 bg-amber-50/50'
+          : isApproved
+            ? 'border-brand-200/80 bg-brand-50/50'
+            : 'border-slate-200/80 bg-slate-50/70'
+      }`}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-start gap-3">
+            {isRecommended ? (
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-100 text-amber-800 shrink-0">
+                <AlertCircle size={18} aria-hidden />
+              </span>
+            ) : isApproved ? (
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-100 text-brand-800 shrink-0">
+                <CheckCircle2 size={18} aria-hidden />
+              </span>
+            ) : (
+              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-600 shrink-0">
+                <Utensils size={18} aria-hidden />
+              </span>
+            )}
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-semibold text-slate-900">
+                  {isRecommended
+                    ? 'Action Required: Authorize Kitchen Preparation'
+                    : isApproved
+                      ? 'Status: Preparation Approved & Kitchen Ready'
+                      : 'Action Required: Generate Demand Forecast'}
+                </p>
+                {isRecommended && (
+                  <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-800">
+                    Decision Pending
+                  </span>
+                )}
+              </div>
+              <p className="mt-0.5 text-xs text-slate-600 max-w-2xl">
+                {isRecommended
+                  ? 'Portions have been computed from attendance baselines and historical uptake. Confirm or adjust prep quantities before cooking begins.'
+                  : isApproved
+                    ? 'Preparation targets are active in kitchen operations. The culinary team can begin prep and log final servings after dining hours.'
+                    : 'A menu is configured for this meal. Run the forecasting model to calculate recommended portion targets.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {isManager && isRecommended && onApprove && (
+              <Button
+                variant="primary"
+                size="md"
+                disabled={isApproving}
+                onClick={() => onApprove(next)}
+              >
+                <CheckCircle2 size={16} aria-hidden />
+                {isApproving ? 'Approving...' : 'Approve Kitchen Plan'}
+              </Button>
+            )}
+            <ButtonLink
+              variant="secondary"
+              size="md"
+              href={hrefFor('operations', { date: next.date, meal: next.meal })}
+            >
+              Open Plan Editor <ChevronRight size={14} aria-hidden />
+            </ButtonLink>
+          </div>
         </div>
       </div>
 
       <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-lg bg-white p-3 border border-gray-100">
-          <p className="text-xs font-medium text-gray-500">Predicted Diners</p>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl font-bold text-gray-900 tabular-nums">
+        <div className="rounded-xl border border-slate-200/80 bg-slate-50/40 p-4">
+          <p className="text-xs font-medium text-slate-500">Predicted Demand</p>
+          <div className="mt-1.5 flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-slate-900 tabular-nums">
               {next.predictedDiners !== null ? fmtInt(next.predictedDiners) : '—'}
             </span>
+            <span className="text-xs text-slate-500 font-medium">diners</span>
             {next.record?.lowerDiners && next.record?.upperDiners && (
-              <span className="text-xs text-gray-500 tabular-nums">
+              <span className="text-xs font-mono text-slate-500 tabular-nums">
                 ({fmtInt(next.record.lowerDiners)}–{fmtInt(next.record.upperDiners)})
               </span>
             )}
           </div>
-          <p className="mt-0.5 text-[11px] text-gray-500">
-            {next.record?.baselineDiners ? `Baseline: ${fmtInt(next.record.baselineDiners)} diners` : 'Estimated from menu & history'}
-          </p>
-        </div>
-
-        <div className="rounded-lg bg-white p-3 border border-gray-100">
-          <p className="text-xs font-medium text-gray-500">Suggested Preparation</p>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="text-xl font-bold text-brand-800 tabular-nums">
-              {totalSuggestedKg > 0 ? `${fmtNum(totalSuggestedKg, 1)} kg` : '—'}
-            </span>
-          </div>
-          <p className="mt-0.5 text-[11px] text-gray-500">
-            {preview?.items.length ?? next.menu.items.length} items configured
-          </p>
-        </div>
-
-        <div className="rounded-lg bg-white p-3 border border-gray-100 sm:col-span-2">
-          <p className="text-xs font-medium text-gray-500">Configured Menu Items</p>
-          <p className="mt-1 text-xs text-gray-800 truncate" title={next.menu.items.map((i) => i.name).join(', ')}>
-            {next.menu.items.map((i) => i.name).join(' · ')}
-          </p>
-          <div className="mt-1 flex items-center gap-3 text-[11px] text-gray-500">
-            {preview?.source === 'saved' ? (
-              <span className="text-brand-700 font-medium">✓ Stored plan in database</span>
+          <div className="mt-2 text-[11px] text-slate-600">
+            {baselineDiners !== null ? (
+              <span className="inline-flex items-center gap-1">
+                <span>Baseline: <strong>{fmtInt(baselineDiners)}</strong></span>
+                {dinerDiff !== null && (
+                  <span className={dinerDiff >= 0 ? 'text-brand-700 font-medium' : 'text-amber-700 font-medium'}>
+                    · {dinerDiff >= 0 ? '+' : ''}{dinerDiff} ({diffPct !== null ? `${diffPct >= 0 ? '+' : ''}${diffPct.toFixed(1)}%` : ''})
+                  </span>
+                )}
+              </span>
             ) : (
-              <span>Deterministic baseline estimate</span>
+              'Estimated from menu & past attendance'
             )}
           </div>
         </div>
-      </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-3">
-        <div className="text-xs text-gray-500">
-          {isRecommended && (
-            <span className="flex items-center gap-1.5 text-amber-700">
-              <AlertCircle size={14} />
-              Preparation quantities calculated. Manager authorization required before cooking begins.
+        <div className="rounded-xl border border-slate-200/80 bg-slate-50/40 p-4">
+          <p className="text-xs font-medium text-slate-500">Suggested Preparation</p>
+          <div className="mt-1.5 flex items-baseline gap-2">
+            <span className="text-2xl font-bold font-mono text-brand-800 tabular-nums">
+              {totalSuggestedKg > 0 ? `${fmtNum(totalSuggestedKg, 1)} kg` : '—'}
             </span>
-          )}
-          {isApproved && (
-            <span className="flex items-center gap-1.5 text-brand-700 font-medium">
-              <CheckCircle2 size={14} />
-              Approved by management. Kitchen staff can log batch servings and plate leftovers.
-            </span>
-          )}
-          {isNotPlanned && (
-            <span>No plan saved yet for this menu. Review forecast to calculate portion requirements.</span>
-          )}
+          </div>
+          <p className="mt-2 text-[11px] text-slate-600">
+            {preview?.items.length ?? next.menu.items.length} items configured with safety buffer
+          </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {isManager && isRecommended && onApprove && (
-            <Button
-              variant="primary"
-              size="sm"
-              disabled={isApproving}
-              onClick={() => onApprove(next)}
-            >
-              <CheckCircle2 size={14} aria-hidden />
-              {isApproving ? 'Approving...' : 'Approve Kitchen Plan'}
-            </Button>
-          )}
-
-          <ButtonLink
-            variant="secondary"
-            size="sm"
-            href={hrefFor('operations', { date: next.date, meal: next.meal })}
-          >
-            Open Plan Editor <ChevronRight size={14} aria-hidden />
-          </ButtonLink>
+        <div className="rounded-xl border border-slate-200/80 bg-slate-50/40 p-4 sm:col-span-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-medium text-slate-500">Configured Menu Dishes & Portions</p>
+            <span className="text-[11px] text-brand-700 font-medium">
+              {preview?.source === 'saved' ? '✓ Stored plan in database' : 'Deterministic estimate'}
+            </span>
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {next.menu.items.map((item) => (
+              <span
+                key={item.id}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200/90 bg-white px-2.5 py-1 text-xs text-slate-800 font-medium shadow-2xs"
+              >
+                <span>{item.name}</span>
+                <span className="text-[11px] text-slate-500 font-mono tabular-nums">
+                  {item.kgPerPortion < 0.1 ? `${Math.round(item.kgPerPortion * 1000)}g` : `${item.kgPerPortion} kg`}
+                </span>
+              </span>
+            ))}
+          </div>
         </div>
       </div>
     </div>

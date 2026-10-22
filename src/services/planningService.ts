@@ -22,8 +22,8 @@ export interface UpcomingMeal {
   predictedDiners: number | null;
 }
 
-const findRecord = (records: MealRecord[], date: string, meal: MealType): MealRecord | null =>
-  records.find((r) => r.id === recordId(date, meal)) ?? null;
+export const findRecord = (records: MealRecord[], date: string, meal: MealType): MealRecord | null =>
+  records.find((r) => r.id === recordId(date, meal) || (r.date === date && r.meal === meal)) ?? null;
 
 function tryForecast(state: PlanningState, menu: Menu) {
   try {

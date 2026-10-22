@@ -4,8 +4,9 @@ import type { MealType, Menu } from '../types';
 import { useAppStore } from '../store/AppStore';
 import { useToast } from '../components/common/Toast';
 import { DEMO_TODAY, MEAL_META, MEAL_ORDER } from '../lib/constants';
-import { formatLong } from '../lib/dates';
+import { formatLong, isValidDateString } from '../lib/dates';
 import { fmtNum } from '../lib/format';
+import { useRoute } from '../lib/router';
 import { deletionPolicy, findMenu, menusOnDate } from '../services/menuService';
 import { recordId } from '../services/operationsService';
 import { PageHeader } from '../components/common/PageHeader';
@@ -24,8 +25,10 @@ type FormState = { menu?: Menu; presetMeal?: MealType } | null;
 export default function Menus() {
   const { state, dispatch, currentUser } = useAppStore();
   const { notify } = useToast();
+  const { params } = useRoute();
   const { menus, records } = state;
-  const [selected, setSelected] = useState(DEMO_TODAY);
+  const paramDate = params.get('date');
+  const [selected, setSelected] = useState(isValidDateString(paramDate) ? paramDate : DEMO_TODAY);
   const [form, setForm] = useState<FormState>(null);
   const [toDelete, setToDelete] = useState<Menu | null>(null);
 

@@ -5,10 +5,10 @@ import { cx } from '../../lib/cx';
 export type Tone = 'neutral' | 'brand' | 'amber' | 'red';
 
 const tones: Record<Tone, string> = {
-  neutral: 'bg-gray-100 text-gray-700 ring-gray-200',
-  brand: 'bg-brand-50 text-brand-800 ring-brand-200',
-  amber: 'bg-amber-50 text-amber-800 ring-amber-200',
-  red: 'bg-red-50 text-red-700 ring-red-200',
+  neutral: 'bg-slate-100 text-slate-700 ring-slate-200',
+  brand: 'bg-brand-50 text-brand-800 ring-brand-700/20',
+  amber: 'bg-amber-50 text-amber-800 ring-amber-600/20',
+  red: 'bg-red-50 text-red-700 ring-red-600/20',
 };
 
 export function Badge({ tone = 'neutral', children, className }: { tone?: Tone; children: ReactNode; className?: string }) {

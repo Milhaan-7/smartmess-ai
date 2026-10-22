@@ -15,6 +15,8 @@ let currentAuthToken: string | null = (() => {
   }
 })();
 
+
+
 export function setAuthToken(token: string | null) {
   currentAuthToken = token;
   try {
@@ -57,10 +59,19 @@ async function request<T>(endpoint: string, options?: RequestInit): Promise<T> {
     headers,
   });
 
+  const contentType = res.headers.get('content-type') || '';
   if (!res.ok) {
-    const errorBody = await res.json().catch(() => ({}));
-    const message = errorBody.error || `HTTP ${res.status}: ${res.statusText}`;
+    let message = `HTTP ${res.status}: ${res.statusText}`;
+    if (contentType.includes('application/json')) {
+      const errorBody = await res.json().catch(() => ({}));
+      message = errorBody.error || message;
+    }
     throw new Error(message);
+  }
+
+  if (!contentType.includes('application/json')) {
+    const text = await res.text();
+    throw new Error(`Expected JSON response but received ${contentType || 'non-JSON'} (${res.status}): ${text.slice(0, 80)}`);
   }
 
   return res.json() as Promise<T>;
@@ -156,5 +167,29 @@ export const api = {
     request<Settings>('/settings', {
       method: 'PUT',
       body: JSON.stringify(settings),
+    }),
+
+  getAiInsights: (data: {
+    date: string;
+    meal: string;
+    predictedDiners: number;
+    baselineDiners: number | null;
+    context: string;
+    items?: Array<{ name: string; suggestedPrep: number }>;
+  }) =>
+    request<{
+      available: boolean;
+      reason?: string;
+      model?: string;
+      insights: string[];
+    }>('/forecast/ai-insights', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  sendChatMessage: (message: string, history?: Array<{ role: string; content: string }>) =>
+    request<{ reply: string; model: string; timestamp: string }>('/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, history }),
     }),
 };

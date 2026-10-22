@@ -1,4 +1,3 @@
-/// <reference types="vitest" />
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
@@ -24,4 +23,4 @@ export default defineConfig({
     globals: true,
     css: false,
   },
-});
+} as any);

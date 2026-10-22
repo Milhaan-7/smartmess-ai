@@ -102,7 +102,7 @@ describe('Phase 3C Role-Aware Kitchen Staff & Student Behavior', () => {
     expect(await screen.findByText('Persisted Shahi Paneer')).toBeInTheDocument();
   });
 
-  it('initializes student menu data cleanly when persisted menus are empty instead of keeping stale seed data', async () => {
+  it('preserves localStorage and seeded student menu data when backend returns empty menus in unconfigured demo mode', async () => {
     setAuthToken('demo-token-student');
     vi.spyOn(api, 'getMe').mockResolvedValue({
       user: {
@@ -119,8 +119,8 @@ describe('Phase 3C Role-Aware Kitchen Staff & Student Behavior', () => {
 
     render(<App />);
 
-    expect(await screen.findAllByText(/No menu published/i)).toHaveLength(3);
-    expect(screen.queryByText('Paneer Butter Masala')).not.toBeInTheDocument();
+    expect(await screen.findByText('Steamed Rice')).toBeInTheDocument();
+    expect(screen.queryByText(/No menu published/i)).not.toBeInTheDocument();
     expect(getSettingsSpy).not.toHaveBeenCalled();
     expect(getRecordsSpy).not.toHaveBeenCalled();
   });

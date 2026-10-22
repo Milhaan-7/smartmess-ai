@@ -1,6 +1,1 @@
-{
-  "name": "SmartMess AI",
-  "description": "SmartMess AI — demand forecasting and food-waste reduction for institutional kitchens (demo with synthetic data).",
-  "permissions": [],
-  "capabilities": []
-}
+{"name":"smartmess-ai","description":"SmartMess AI — demand forecasting and food-waste reduction for institutional kitchens (demo with synthetic data).","permissions":[],"capabilities":[]}

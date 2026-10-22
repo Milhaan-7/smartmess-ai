@@ -195,6 +195,7 @@ export interface SeedState {
   menus: Menu[];
   records: MealRecord[];
   settings: Settings;
+  notifications: import('../types').AppNotification[];
 }
 
 export function createSeedState(): SeedState {
@@ -233,5 +234,31 @@ export function createSeedState(): SeedState {
       records.push(rec);
     }
   }
-  return { menus, records, settings };
+
+  const notifications: import('../types').AppNotification[] = [
+    {
+      id: 'notif-today-lunch',
+      title: "Today's Lunch Menu Approved",
+      message: "The manager has approved the Lunch menu for today. View portion weights and service hours.",
+      type: 'daily',
+      date: DEMO_TODAY,
+      meal: 'lunch',
+      timestamp: `${DEMO_TODAY}T08:40:00`,
+      read: false,
+      linkHash: `#/menus?date=${DEMO_TODAY}`,
+    },
+    {
+      id: 'notif-weekly-published',
+      title: "Weekly Dining Menu Available",
+      message: "The published dining menu for this week is now available for students.",
+      type: 'weekly',
+      date: DEMO_TODAY,
+      timestamp: `${DEMO_TODAY}T08:00:00`,
+      read: true,
+      linkHash: '#/menus',
+    },
+  ];
+
+  return { menus, records, settings, notifications };
 }
+

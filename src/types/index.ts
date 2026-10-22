@@ -3,7 +3,8 @@ export type MealType = 'breakfast' | 'lunch' | 'dinner';
 export type PlanStatus = 'recommended' | 'approved' | 'completed';
 export type DisplayStatus = PlanStatus | 'not_planned';
 export type SpecialDay = 'normal' | 'exam_week' | 'campus_event' | 'festival_holiday';
-export type PageId = 'dashboard' | 'forecasts' | 'menus' | 'operations' | 'waste' | 'settings';
+export type PageId = 'dashboard' | 'forecasts' | 'menus' | 'operations' | 'waste' | 'settings' | 'ai-assistant' | 'login';
+
 
 export interface MenuItem {
   id: string;
@@ -125,3 +126,18 @@ export interface MealRecord {
   completedAt: string | null;
   items: RecordItem[];
 }
+
+/* ---------- Notifications ---------- */
+
+export interface AppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'daily' | 'weekly';
+  date: string;
+  meal?: MealType;
+  timestamp: string;
+  read: boolean;
+  linkHash: string;
+}
+

@@ -21,11 +21,14 @@ import { Notice, SyntheticNote } from '../components/common/Notice';
 import { Badge, StatusBadge } from '../components/common/Badge';
 import { BaselineComparisonChart } from '../components/charts/BaselineComparisonChart';
 
+import { AiInsightsCard } from '../components/dashboard/AiInsightsCard';
+
 interface RunInputs {
   date: string;
   meal: MealType;
   context: SpecialDay;
 }
+
 
 export default function Forecasts() {
   const { state, dispatch } = useAppStore();
@@ -184,9 +187,9 @@ export default function Forecasts() {
         {forecast && (
           <>
             <div className="grid gap-4 lg:grid-cols-3">
-              <div className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm lg:col-span-2">
+              <div className="rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs lg:col-span-2">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h2 className="text-[15px] font-semibold text-gray-900">
+                  <h2 className="text-[15px] font-semibold text-slate-900">
                     {MEAL_META[forecast.meal].label} · {formatMedium(forecast.date)}
                   </h2>
                   <Badge tone="neutral">{SPECIAL_DAYS[forecast.context].label}</Badge>
@@ -194,33 +197,33 @@ export default function Forecasts() {
                 </div>
                 <div className="mt-4 grid gap-6 sm:grid-cols-3">
                   <div>
-                    <p className="text-[13px] text-gray-500">Expected diners</p>
-                    <p className="text-4xl font-semibold tabular-nums tracking-tight text-gray-900">{fmtInt(forecast.predictedDiners)}</p>
-                    <p className="mt-1 text-xs text-gray-500">Likely range {fmtInt(forecast.lowerDiners)}–{fmtInt(forecast.upperDiners)}</p>
+                    <p className="text-[13px] text-slate-500">Expected diners</p>
+                    <p className="text-4xl font-semibold font-mono tabular-nums tracking-tight text-slate-900">{fmtInt(forecast.predictedDiners)}</p>
+                    <p className="mt-1 text-xs text-slate-500">Likely range {fmtInt(forecast.lowerDiners)}–{fmtInt(forecast.upperDiners)}</p>
                   </div>
                   <div>
-                    <p className="text-[13px] text-gray-500">Historical-average baseline</p>
-                    <p className="text-2xl font-semibold tabular-nums text-gray-600">{fmtInt(forecast.baselineDiners)}</p>
-                    <p className="mt-1 flex items-center gap-1 text-xs text-gray-500">
+                    <p className="text-[13px] text-slate-500">Historical-average baseline</p>
+                    <p className="text-2xl font-semibold font-mono tabular-nums text-slate-600">{fmtInt(forecast.baselineDiners)}</p>
+                    <p className="mt-1 flex items-center gap-1 text-xs text-slate-500">
                       {diffVsBaseline >= 0 ? <TrendingUp size={13} aria-hidden /> : <TrendingDown size={13} aria-hidden />}
                       Forecast is {signed(diffVsBaseline)} vs baseline
                     </p>
                   </div>
                   <div>
-                    <p className="text-[13px] text-gray-500">History used</p>
-                    <p className="text-2xl font-semibold tabular-nums text-gray-600">{forecast.historyRecordsUsed}</p>
-                    <p className="mt-1 text-xs text-gray-500">completed {MEAL_META[forecast.meal].label.toLowerCase()} meals</p>
+                    <p className="text-[13px] text-slate-500">History used</p>
+                    <p className="text-2xl font-semibold font-mono tabular-nums text-slate-600">{forecast.historyRecordsUsed}</p>
+                    <p className="mt-1 text-xs text-slate-500">completed {MEAL_META[forecast.meal].label.toLowerCase()} meals</p>
                   </div>
                 </div>
-                <p className="mt-4 text-xs text-gray-500">
+                <p className="mt-4 text-xs text-slate-500">
                   The range is the forecast ± {forecast.assumptions.bandDiners} diners (1.5 × the recent mean absolute error of stored forecasts, which are synthetic in this demo). It is a heuristic band, not a statistical confidence interval.
                 </p>
               </div>
 
-              <div className="flex flex-col justify-between rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+              <div className="flex flex-col justify-between rounded-xl border border-slate-200/90 bg-white p-5 shadow-xs">
                 <div>
-                  <h2 className="text-[15px] font-semibold text-gray-900">Next step</h2>
-                  <p className="mt-1 text-[13px] text-gray-600">
+                  <h2 className="text-[15px] font-semibold text-slate-900">Next step</h2>
+                  <p className="mt-1 text-[13px] text-slate-600">
                     Send this forecast to Kitchen Operations. Nothing is approved automatically; the manager reviews each quantity.
                   </p>
                 </div>
@@ -237,7 +240,17 @@ export default function Forecasts() {
               </div>
             </div>
 
+            <AiInsightsCard
+              date={forecast.date}
+              meal={forecast.meal}
+              predictedDiners={forecast.predictedDiners}
+              baselineDiners={forecast.baselineDiners}
+              context={forecast.context}
+              items={forecast.items.map((i) => ({ name: i.name, suggestedPrep: i.suggestedPrep }))}
+            />
+
             <Card
+
               title="Item-level demand and recommended preparation"
               description="Predicted demand is what diners are expected to eat. Recommended prep adds a buffer and is rounded up to a serving step."
               flush
